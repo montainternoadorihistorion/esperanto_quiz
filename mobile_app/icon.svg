@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Esperanto 4択">
+  <rect width="512" height="512" rx="96" fill="#0f7a5a"/>
+  <path fill="#ffffff" d="m256 86 42 128 134 1-108 79 40 128-108-78-109 78 41-128-108-79 134-1z"/>
+  <circle cx="256" cy="270" r="98" fill="#f7f8f4"/>
+  <text x="256" y="303" text-anchor="middle" font-family="Arial, sans-serif" font-size="112" font-weight="800" fill="#0f7a5a">4</text>
+</svg>

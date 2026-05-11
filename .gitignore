@@ -1,0 +1,34 @@
+# Python caches
+__pycache__/
+*.py[cod]
+*.pyo
+
+# OS noise
+.DS_Store
+*:Zone.Identifier
+
+# Node/Playwright test artifacts
+node_modules/
+test-results/
+playwright-report/
+
+# Large local assets that are not needed for the first Streamlit Cloud deploy
+audio/
+Esperanto例文5000文_収録音声/
+エスペラント例文5000枚のイメージ画像_jpeg_q80/
+PIV2020.html
+PIV2020_structured.txt
+４択アプリをブラッシュアップするためのエスペラントプロンプト.docx
+
+# Local archives and working logs
+fuyou/
+編集ログ/
+git-helper-cross-platform-bundle/
+
+# Streamlit secrets (do not commit real credentials)
+.streamlit/secrets.toml
+
+# Google service account keys (keep out of VCS)
+gen-lang-client-*.json
+gen-lang-client-*.json:Zone.Identifier
+*.serviceaccount.json

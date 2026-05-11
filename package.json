@@ -1,0 +1,11 @@
+{
+  "private": true,
+  "scripts": {
+    "test:mobile": "playwright test tests/mobile-pwa.spec.js --browser=chromium",
+    "test:streamlit-mobile": "playwright test tests/streamlit-mobile.spec.js --browser=chromium",
+    "serve:mobile": "python3 -m http.server 8765"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.59.1"
+  }
+}

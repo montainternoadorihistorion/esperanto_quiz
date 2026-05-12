@@ -14,6 +14,7 @@
 - 進行中クイズの保護: 再開導線を表示し、新規開始で上書きする前に確認
 - スマホ版スコア保存: 結果画面の「ランキングに保存」から `mobile_score_sync.py` 経由でGoogle Sheetsの `Scores` / `UserStats` / `UserStatsSentence` に反映
 - 音声: スマホ版は `mobile_app/audio/` と `mobile_app/sentence-audio/` をコンポーネント配下から同一オリジン配信。`mobile_app/data/audio_manifest.json` はGoogle Driveフォールバックとして使う。
+- 音声ボタン: 表示中のテキストがエスペラントのときだけ表示。日本語の問題文・日本語の選択肢には音声ボタンを出さない。
 
 Streamlitの静的ファイル配信はHTML/JSアプリ配信向けではないため、Streamlit Cloudではカスタムコンポーネントとして埋め込みます。CSV更新後は次を実行してJSONを更新します。
 

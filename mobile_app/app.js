@@ -1,4 +1,4 @@
-const APP_VERSION = "2026-05-13-mobile-audio-component-2";
+const APP_VERSION = "2026-05-13-mobile-audio-visible-text-1";
 const STORAGE_PREFIX = "esperanto-choice-mobile";
 const SESSION_KEY = `${STORAGE_PREFIX}:session:v2`;
 const SETTINGS_KEY = `${STORAGE_PREFIX}:settings:v2`;
@@ -273,7 +273,7 @@ function bindEvents() {
 
   els.promptAudioButton.addEventListener("click", () => {
     const current = getCurrentQuestion();
-    if (current) {
+    if (current && state.session && canPlayPromptAudio(state.session, current)) {
       playAudio(current.mode, current.options[current.answerIndex]);
     }
   });
@@ -1101,9 +1101,7 @@ function renderQuiz() {
   els.phaseLabel.textContent = phaseText;
   els.promptText.textContent = prompt;
 
-  const answerOption = question.options[question.answerIndex];
-  const canPromptAudio = session.settings.audioMode !== "off" && hasPlayableAudio(answerOption);
-  els.promptAudioButton.hidden = !canPromptAudio;
+  els.promptAudioButton.hidden = !canPlayPromptAudio(session, question);
 
   const answeredMain = Math.min(session.qIndex, session.questions.length);
   const progress = session.inSpartan
@@ -1159,7 +1157,7 @@ function renderChoices(question) {
       }
       card.append(button);
 
-      if (session.settings.audioMode === "all" && hasPlayableAudio(option)) {
+      if (canPlayChoiceAudio(session, question, option)) {
         const audioButton = document.createElement("button");
         audioButton.type = "button";
         audioButton.className = "choice-audio-button";
@@ -1561,6 +1559,31 @@ function displayOption(option, direction) {
   return direction === "ja_to_eo" ? option.eo : option.ja;
 }
 
+function isPromptEsperanto(direction) {
+  return direction === "eo_to_ja";
+}
+
+function areChoicesEsperanto(direction) {
+  return direction === "ja_to_eo";
+}
+
+function canPlayPromptAudio(session, question) {
+  const answerOption = question.options[question.answerIndex];
+  return Boolean(
+    session.settings.audioMode !== "off"
+    && isPromptEsperanto(session.settings.direction)
+    && hasPlayableAudioForMode(question.mode, answerOption),
+  );
+}
+
+function canPlayChoiceAudio(session, question, option) {
+  return Boolean(
+    session.settings.audioMode === "all"
+    && areChoicesEsperanto(session.settings.direction)
+    && hasPlayableAudioForMode(question.mode, option),
+  );
+}
+
 async function playAudio(mode, option) {
   const urls = getAudioUrls(mode, option);
   if (!urls.length) {
@@ -1645,6 +1668,10 @@ function playAudioUrl(url, token) {
 
 function hasPlayableAudio(option) {
   const mode = getCurrentQuestion()?.mode || state.settings.mode;
+  return hasPlayableAudioForMode(mode, option);
+}
+
+function hasPlayableAudioForMode(mode, option) {
   return Boolean(option?.hasAudio && getAudioUrl(mode, option));
 }
 

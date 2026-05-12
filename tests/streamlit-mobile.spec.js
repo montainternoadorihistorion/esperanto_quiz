@@ -198,7 +198,7 @@ test("Streamlit mobile result and history stay readable", async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
-test("Streamlit mobile sentence audio is served from the component", async ({ page }) => {
+test("Streamlit mobile sentence prompt audio is served only for Esperanto prompts", async ({ page }) => {
   const appUrl = process.env.STREAMLIT_APP_URL || "http://127.0.0.1:8501/";
   const errors = [];
   page.on("console", (message) => {
@@ -221,7 +221,7 @@ test("Streamlit mobile sentence audio is served from the component", async ({ pa
   await mobileApp.locator("#startButton").click();
   await expect(mobileApp.locator("#quizView")).toHaveClass(/is-active/);
   await expect(mobileApp.locator("#promptAudioButton")).toBeVisible();
-  await expect(mobileApp.locator(".choice-audio-button").first()).toBeVisible();
+  await expect(mobileApp.locator(".choice-audio-button")).toHaveCount(0);
 
   const sentenceAudioUrlPattern = /\/component\/mobile_streamlit_bridge\.esperanto_mobile_pwa\/sentence-audio\/.+\.wav$/;
   const promptAudioResponsePromise = page.waitForResponse(
@@ -233,6 +233,36 @@ test("Streamlit mobile sentence audio is served from the component", async ({ pa
   expect(promptAudioResponse.status()).toBe(200);
   expect(promptAudioResponse.headers()["content-type"] || "").toMatch(/audio|octet-stream/);
 
+  expect(errors).toEqual([]);
+});
+
+test("Streamlit mobile sentence choice audio is served only for Esperanto choices", async ({ page }) => {
+  const appUrl = process.env.STREAMLIT_APP_URL || "http://127.0.0.1:8501/";
+  const errors = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") {
+      errors.push(message.text());
+    }
+  });
+  page.on("pageerror", (error) => errors.push(error.message));
+
+  await page.goto(appUrl, { waitUntil: "domcontentloaded" });
+  const mobileApp = page.frameLocator("iframe[title*='esperanto_mobile_pwa']");
+  await expect(mobileApp.locator("#startButton")).toBeEnabled({ timeout: 15000 });
+  await mobileApp.locator("#homeNav").click();
+  await mobileApp.locator("#modeSentence").click();
+  await expect(mobileApp.locator("#modeSentence")).toHaveAttribute("aria-selected", "true");
+  await mobileApp.locator("#directionSelect").selectOption("ja_to_eo");
+  await mobileApp.locator("#audioMode").selectOption("all");
+  await mobileApp.locator("#lengthSelect").selectOption("10");
+  await mobileApp.locator("#spartanMode").uncheck();
+  await mobileApp.locator("#startButton").scrollIntoViewIfNeeded();
+  await mobileApp.locator("#startButton").click();
+  await expect(mobileApp.locator("#quizView")).toHaveClass(/is-active/);
+  await expect(mobileApp.locator("#promptAudioButton")).toBeHidden();
+  await expect(mobileApp.locator(".choice-audio-button").first()).toBeVisible();
+
+  const sentenceAudioUrlPattern = /\/component\/mobile_streamlit_bridge\.esperanto_mobile_pwa\/sentence-audio\/.+\.wav$/;
   const choiceAudioResponsePromise = page.waitForResponse(
     (response) => sentenceAudioUrlPattern.test(response.url()),
     { timeout: 5000 },

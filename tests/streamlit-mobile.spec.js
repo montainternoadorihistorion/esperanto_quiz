@@ -205,6 +205,15 @@ test("Streamlit mobile result and history stay readable", async ({ page }) => {
   await expect(mobileApp.locator("#diagnosticsList")).toContainText("クイズデータ");
   await expect(mobileApp.locator("#diagnosticsList")).toContainText("スコア保存");
   await expect(mobileApp.locator("#diagnosticsList")).toContainText("Service Worker");
+  await expect(mobileApp.locator("#audioDiagSentenceButton")).toBeEnabled();
+  const diagnosticAudioResponsePromise = page.waitForResponse(
+    (response) => /\/component\/mobile_streamlit_bridge\.esperanto_mobile_pwa\/sentence-audio\/.+\.wav$/.test(response.url()),
+    { timeout: 5000 },
+  );
+  await mobileApp.locator("#audioDiagSentenceButton").click();
+  const diagnosticAudioResponse = await diagnosticAudioResponsePromise;
+  expect([200, 206]).toContain(diagnosticAudioResponse.status());
+  await expect(mobileApp.locator("#audioDiagSentenceStatus")).toContainText("再生できました");
   expect(errors).toEqual([]);
 });
 

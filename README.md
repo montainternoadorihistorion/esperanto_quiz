@@ -32,6 +32,7 @@ http://127.0.0.1:8501/?classic=1
 - 成績履歴は端末内に保存。Streamlit Cloud内では結果画面の「ランキングに保存」からGoogle Sheetsの累積得点・ランキングにも加算
 - Streamlit Cloud内のスマホ版成績画面では、Google Sheetsの累積・本日・今月・殿堂ランキングを確認できます。
 - スマホ版の下部ナビに診断画面を用意し、データ件数、音声設定、保存状態、ランキング通信状態、端末保存使用量を確認できます。
+- 診断画面では、単語・例文のサンプル音声を実際に再生して、スマホ実機で音声配信が通るか確認できます。
 - 端末保存容量が不足した場合は、進行中クイズの保存を優先し、古い端末内成績履歴を自動整理します。
 - スマホ版でも音声再生に対応。Streamlit Cloudでは `mobile_app/audio/` と `mobile_app/sentence-audio/` をコンポーネント配下から同一オリジン配信し、Google Drive manifestはフォールバックとして使います。
 - 音声は、画面に表示されているテキストがエスペラントのときだけ再生します。エスペラント→日本語では問題文を自動再生し、日本語→エスペラントでは日本語問題文を読まず、エスペラントの選択肢音声だけ再生できます。
@@ -89,6 +90,12 @@ sentence_base_url = "https://example.com/sentence-audio/"
 `vocab_base_url` / `sentence_base_url` は、Cloud Storageなどで `<base_url>/<audioKey>.wav` として配信する場合だけ指定します。
 
 ## 検証
+
+Python側のスコア保存・ランキング集計の単体テスト:
+
+```bash
+npm run test:unit
+```
 
 スマホ用JSON、CSV、音声ファイル、Google Driveフォールバックmanifestの整合性検証:
 

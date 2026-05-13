@@ -204,6 +204,10 @@ const state = {
   audioPlaybackToken: 0,
   autoPromptAudioAllowedUntil: 0,
   lastAutoPromptAudioKey: "",
+  audioDiagnostics: {
+    vocab: { status: "idle", message: "未確認", audioKey: "" },
+    sentence: { status: "idle", message: "未確認", audioKey: "" },
+  },
   scoreSyncRetryQueuedFor: "",
   scoreSyncRetryTimeout: null,
   diagnosticsRenderToken: 0,
@@ -1903,7 +1907,14 @@ function renderDiagnostics() {
     ["スコア保存", scoreSyncDiagnosticText()],
     ["Service Worker", serviceWorkerDiagnosticText()],
   ];
-  els.diagnosticsList.replaceChildren(...rows.map(([label, value]) => createDiagnosticItem(label, value)));
+  const items = rows.map(([label, value]) => createDiagnosticItem(label, value));
+  items.splice(
+    5,
+    0,
+    createAudioDiagnosticItem("単語音声テスト", "vocab"),
+    createAudioDiagnosticItem("例文音声テスト", "sentence"),
+  );
+  els.diagnosticsList.replaceChildren(...items);
   requestFrameHeightSync();
   updateStorageEstimate(renderToken);
 }
@@ -1938,6 +1949,75 @@ function audioDiagnosticText() {
     source.push("Driveフォールバックあり");
   }
   return source.length ? source.join(" / ") : "音声URLなし";
+}
+
+function createAudioDiagnosticItem(labelText, mode) {
+  const sample = getAudioDiagnosticSample(mode);
+  const status = state.audioDiagnostics[mode] || { status: "idle", message: "未確認", audioKey: "" };
+  const item = document.createElement("article");
+  item.className = "diagnostic-item diagnostic-audio-item";
+
+  const label = document.createElement("strong");
+  label.textContent = labelText;
+  const summary = document.createElement("span");
+  const sampleKey = sample?.audioKey || status.audioKey || "";
+  summary.textContent = sampleKey ? `サンプル: ${sampleKey}.wav` : "テスト可能な音声がありません";
+
+  const controls = document.createElement("div");
+  controls.className = "diagnostic-audio-actions";
+  const button = document.createElement("button");
+  button.id = mode === "sentence" ? "audioDiagSentenceButton" : "audioDiagVocabButton";
+  button.className = "text-button";
+  button.type = "button";
+  button.textContent = status.status === "running" ? "再生中..." : "再生テスト";
+  button.disabled = !sample || status.status === "running";
+  button.addEventListener("click", () => runAudioDiagnostic(mode));
+
+  const statusText = document.createElement("p");
+  statusText.id = mode === "sentence" ? "audioDiagSentenceStatus" : "audioDiagVocabStatus";
+  statusText.className = `diagnostic-audio-status is-${status.status || "idle"}`;
+  statusText.textContent = status.message || "未確認";
+  controls.append(button, statusText);
+  item.append(label, summary, controls);
+  return item;
+}
+
+function getAudioDiagnosticSample(mode) {
+  const entries = mode === "sentence" ? state.data.sentences : state.data.vocab;
+  return entries.find((entry) => entry?.audioKey && getAudioUrls(mode, entry).length) || null;
+}
+
+function setAudioDiagnosticState(mode, status, message, audioKey = "") {
+  state.audioDiagnostics[mode] = {
+    status,
+    message,
+    audioKey,
+    at: new Date().toISOString(),
+  };
+}
+
+async function runAudioDiagnostic(mode) {
+  const sample = getAudioDiagnosticSample(mode);
+  if (!sample) {
+    setAudioDiagnosticState(mode, "error", "テスト可能な音声が見つかりません。");
+    renderDiagnostics();
+    return;
+  }
+  const urls = getAudioUrls(mode, sample);
+  const primaryUrl = urls[0] || "";
+  setAudioDiagnosticState(mode, "running", `${sample.audioKey}.wav を再生しています。`, sample.audioKey);
+  renderDiagnostics();
+  const ok = await playAudio(mode, sample, { silentFailure: true });
+  if (ok) {
+    setAudioDiagnosticState(mode, "success", `${sample.audioKey}.wav を再生できました。`, sample.audioKey);
+    showToast(`${mode === "sentence" ? "例文" : "単語"}音声を再生できました。`);
+  } else {
+    const hint = primaryUrl ? `URL: ${primaryUrl}` : "音声URLなし";
+    setAudioDiagnosticState(mode, "error", `再生できませんでした。${hint}`, sample.audioKey);
+  }
+  if (state.currentView === "diagnostics") {
+    renderDiagnostics();
+  }
 }
 
 function rankingDiagnosticText() {
@@ -2154,7 +2234,7 @@ async function playAudio(mode, option, { silentFailure = false } = {}) {
     if (!silentFailure) {
       showToast("音声ファイルがありません。");
     }
-    return;
+    return false;
   }
   state.audioPlaybackToken += 1;
   const token = state.audioPlaybackToken;
@@ -2162,10 +2242,10 @@ async function playAudio(mode, option, { silentFailure = false } = {}) {
   for (const url of urls) {
     try {
       await playAudioUrl(url, token);
-      return;
+      return true;
     } catch (error) {
       if (token !== state.audioPlaybackToken) {
-        return;
+        return false;
       }
       lastError = error;
     }
@@ -2174,6 +2254,7 @@ async function playAudio(mode, option, { silentFailure = false } = {}) {
   if (!silentFailure) {
     showToast("音声を再生できませんでした。通信状態と音量設定を確認してください。");
   }
+  return false;
 }
 
 function getAudioPlayer() {

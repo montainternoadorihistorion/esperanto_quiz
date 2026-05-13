@@ -197,6 +197,15 @@ test("mobile result and history stay readable", async ({ page }) => {
   await expect(page.locator("#diagnosticsList")).toContainText("クイズデータ");
   await expect(page.locator("#diagnosticsList")).toContainText("端末保存使用量");
   await expect(page.locator("#diagnosticsList")).toContainText("Service Worker");
+  await expect(page.locator("#audioDiagVocabButton")).toBeEnabled();
+  const diagnosticAudioResponsePromise = page.waitForResponse(
+    (response) => /\/audio\/.+\.wav$/.test(response.url()),
+    { timeout: 5000 },
+  );
+  await page.locator("#audioDiagVocabButton").click();
+  const diagnosticAudioResponse = await diagnosticAudioResponsePromise;
+  expect([200, 206]).toContain(diagnosticAudioResponse.status());
+  await expect(page.locator("#audioDiagVocabStatus")).toContainText("再生できました");
   await expect(errors).toEqual([]);
 });
 

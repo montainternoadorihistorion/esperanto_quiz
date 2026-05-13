@@ -779,6 +779,35 @@ select {
   overflow-wrap: anywhere;
 }
 
+.diagnostic-audio-item {
+  gap: 8px;
+}
+
+.diagnostic-audio-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.diagnostic-audio-status {
+  flex: 1 1 180px;
+  min-width: 0;
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.diagnostic-audio-status.is-success {
+  color: var(--success);
+}
+
+.diagnostic-audio-status.is-error {
+  color: var(--danger);
+}
+
 .section-title-row {
   display: flex;
   align-items: center;

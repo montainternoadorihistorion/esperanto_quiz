@@ -450,6 +450,10 @@ select {
   padding: 12px 0 4px;
 }
 
+.choice-grid.is-vocab {
+  margin-top: 18px;
+}
+
 .choice-grid.is-long {
   grid-template-columns: 1fr;
   margin-top: 12px;
@@ -923,6 +927,16 @@ select {
     border-radius: 8px;
     background: rgba(247, 248, 244, 0.94);
     backdrop-filter: blur(14px);
+  }
+
+  .choice-grid.is-vocab {
+    position: static;
+    bottom: auto;
+    margin: 12px 0 0;
+    padding: 8px 0 4px;
+    border: 0;
+    background: transparent;
+    backdrop-filter: none;
   }
 
   .choice-button {

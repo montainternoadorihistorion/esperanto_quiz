@@ -312,9 +312,7 @@ function bindEvents() {
     retrySession();
   });
   els.newQuizButton.addEventListener("click", () => {
-    state.session = null;
-    saveSession();
-    refreshResumeButton();
+    clearStoredSession();
     setView("setup");
   });
   els.clearHistoryButton.addEventListener("click", () => {
@@ -879,6 +877,19 @@ function saveSession() {
   }
 }
 
+function clearStoredSession() {
+  window.clearTimeout(state.saveTimer);
+  state.session = null;
+  try {
+    window.localStorage.removeItem(SESSION_KEY);
+    updateSaveStatus("進行中のクイズを破棄しました");
+  } catch (error) {
+    console.warn(`Failed to remove ${SESSION_KEY}`, error);
+    writeJson(SESSION_KEY, null);
+  }
+  refreshResumeButton();
+}
+
 function queueSessionSave() {
   window.clearTimeout(state.saveTimer);
   state.saveTimer = window.setTimeout(() => {
@@ -1155,6 +1166,7 @@ function getCheckedLevels() {
 }
 
 function startQuiz({ replaceActive = false } = {}) {
+  let shouldDiscardActive = false;
   if (isActiveSession(state.session) && !replaceActive) {
     const replace = window.confirm("進行中のクイズがあります。現在の進行を終了して、新しいクイズを開始しますか？");
     if (!replace) {
@@ -1162,6 +1174,12 @@ function startQuiz({ replaceActive = false } = {}) {
       resumeStoredSession();
       return false;
     }
+    shouldDiscardActive = true;
+  } else if (isActiveSession(state.session) && replaceActive) {
+    shouldDiscardActive = true;
+  }
+  if (shouldDiscardActive) {
+    clearStoredSession();
   }
   persistSettingsFromForm();
   const settings = { ...state.settings, levels: [...state.settings.levels] };
@@ -1361,6 +1379,7 @@ function renderChoices(question) {
   const labels = question.options.map((option) => displayOption(option, session.settings.direction));
   const longLabels = question.mode === "sentence" || labels.some((label) => label.length > 24);
   els.choiceGrid.classList.toggle("is-long", longLabels);
+  els.choiceGrid.classList.toggle("is-vocab", question.mode === "vocab");
   els.choiceGrid.replaceChildren(
     ...question.options.map((option, index) => {
       const card = document.createElement("div");

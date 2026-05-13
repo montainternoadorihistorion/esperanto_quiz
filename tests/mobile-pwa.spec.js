@@ -84,16 +84,21 @@ test("mobile quiz state survives reload", async ({ page }) => {
 
   const quizMetrics = await page.evaluate(() => {
     const grid = document.querySelector("#choiceGrid");
+    const progress = document.querySelector(".progress-block");
     const nav = document.querySelector(".bottom-nav");
     const gridRect = grid.getBoundingClientRect();
+    const progressRect = progress.getBoundingClientRect();
     const navRect = nav.getBoundingClientRect();
     return {
       navPosition: getComputedStyle(nav).position,
+      progressToChoicesGap: Math.round(gridRect.top - progressRect.bottom),
       gridBottom: gridRect.bottom,
       navTop: navRect.top,
     };
   });
   expect(quizMetrics.navPosition).toBe("fixed");
+  expect(quizMetrics.progressToChoicesGap).toBeGreaterThanOrEqual(0);
+  expect(quizMetrics.progressToChoicesGap).toBeLessThanOrEqual(80);
   expect(quizMetrics.gridBottom).toBeLessThanOrEqual(quizMetrics.navTop + 1);
 
   const firstPrompt = await page.locator("#promptText").textContent();
@@ -131,6 +136,23 @@ test("mobile quiz state survives reload", async ({ page }) => {
   const protectedSession = await page.evaluate(() => JSON.parse(localStorage.getItem("esperanto-choice-mobile:session:v2")));
   expect(protectedSession.id).toBe(storedAfterReload.id);
   expect(dialogSeen).toBe(true);
+
+  let replaceDialogSeen = false;
+  page.once("dialog", async (dialog) => {
+    replaceDialogSeen = true;
+    expect(dialog.message()).toContain("進行中のクイズ");
+    await dialog.accept();
+  });
+  await page.locator("#homeNav").click();
+  await page.locator("#startButton").scrollIntoViewIfNeeded();
+  await page.locator("#startButton").click();
+  await expect(page.locator("#quizView")).toHaveClass(/is-active/);
+  const replacedSession = await page.evaluate(() => JSON.parse(localStorage.getItem("esperanto-choice-mobile:session:v2")));
+  expect(replaceDialogSeen).toBe(true);
+  expect(replacedSession.id).not.toBe(protectedSession.id);
+  expect(replacedSession.status).toBe("active");
+  expect(replacedSession.qIndex).toBe(0);
+  expect(replacedSession.answers).toHaveLength(0);
 
   expect(errors).toEqual([]);
 });

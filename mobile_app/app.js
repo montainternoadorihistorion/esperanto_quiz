@@ -22,6 +22,11 @@ const DEFAULT_AUDIO_CONFIG = {
   driveDownloadBaseUrl: DRIVE_AUDIO_DOWNLOAD_BASE,
   useDriveManifest: false,
 };
+const PUBLIC_APP_URLS = {
+  ja: "https://esperanto-quiz.streamlit.app/",
+  zh: "https://esperanto-quiz-zh.streamlit.app/",
+  ko: "https://esperanto-quiz-ko.streamlit.app/",
+};
 const BASE_POINTS = 10;
 const STREAK_BONUS = 0.5;
 const SENTENCE_SCORE_SCALE = 2.0 / 1.5;
@@ -92,6 +97,10 @@ const TARGET_LANG_META = {
       navQuiz: "クイズ",
       navHistory: "成績",
       navDiagnostics: "診断",
+      languageLinks: "言語",
+      displayLinks: "表示",
+      mobileVersion: "スマホ版",
+      classicVersion: "PC版",
       loadFailed: "読み込みに失敗しました",
       next: "次へ",
       unknown: "不明",
@@ -250,6 +259,10 @@ const TARGET_LANG_META = {
       navQuiz: "测验",
       navHistory: "成绩",
       navDiagnostics: "诊断",
+      languageLinks: "语言",
+      displayLinks: "显示",
+      mobileVersion: "手机版",
+      classicVersion: "电脑版",
       loadFailed: "读取失败",
       next: "下一题",
       unknown: "不明",
@@ -408,6 +421,10 @@ const TARGET_LANG_META = {
       navQuiz: "퀴즈",
       navHistory: "성적",
       navDiagnostics: "진단",
+      languageLinks: "언어",
+      displayLinks: "표시",
+      mobileVersion: "모바일판",
+      classicVersion: "PC판",
       loadFailed: "불러오기에 실패했습니다",
       next: "다음",
       unknown: "알 수 없음",
@@ -707,6 +724,13 @@ const els = {
   historyTitle: document.querySelector("#historyView h2"),
   diagnosticsTitle: document.querySelector("#diagnosticsView h2"),
   errorTitle: document.querySelector("#errorView h2"),
+  languageLinksLabel: document.querySelector("#languageLinksLabel"),
+  versionLinksLabel: document.querySelector("#versionLinksLabel"),
+  jaAppLink: document.querySelector("#jaAppLink"),
+  zhAppLink: document.querySelector("#zhAppLink"),
+  koAppLink: document.querySelector("#koAppLink"),
+  mobileAppLink: document.querySelector("#mobileAppLink"),
+  classicAppLink: document.querySelector("#classicAppLink"),
   homeNav: document.querySelector("#homeNav"),
   quizNav: document.querySelector("#quizNav"),
   historyNav: document.querySelector("#historyNav"),
@@ -952,7 +976,7 @@ function detectInitialTargetLang() {
 
 function detectInitialDefaultMode() {
   const params = new URLSearchParams(window.location.search);
-  const mode = String(params.get("mode") || params.get("defaultMode") || "").trim().toLowerCase();
+  const mode = String(params.get("quiz") || params.get("mode") || params.get("defaultMode") || "").trim().toLowerCase();
   return ["vocab", "sentence"].includes(mode) ? mode : DEFAULT_SETTINGS.mode;
 }
 
@@ -990,6 +1014,61 @@ function formatText(key, replacements = {}) {
 
 function modeLabel(mode) {
   return mode === "sentence" ? currentLangMeta().modeSentence : currentLangMeta().modeVocab;
+}
+
+function currentModeForLinks() {
+  return normalizeDefaultMode(state.settings.mode || state.mobileConfig.defaultMode);
+}
+
+function buildPublicAppUrl(lang, params = {}) {
+  const base = PUBLIC_APP_URLS[normalizeTargetLang(lang)] || PUBLIC_APP_URLS.ja;
+  const url = new URL(base);
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "") {
+      url.searchParams.set(key, String(value));
+    }
+  });
+  return url.toString();
+}
+
+function setCurrentLink(link, isCurrent) {
+  if (!link) {
+    return;
+  }
+  link.classList.toggle("is-active", Boolean(isCurrent));
+  if (isCurrent) {
+    link.setAttribute("aria-current", "page");
+  } else {
+    link.removeAttribute("aria-current");
+  }
+}
+
+function renderAppLinks() {
+  const mode = currentModeForLinks();
+  const lang = state.mobileConfig.targetLang;
+  const languageLinks = [
+    [els.jaAppLink, "ja", TARGET_LANG_META.ja.name],
+    [els.zhAppLink, "zh", TARGET_LANG_META.zh.name],
+    [els.koAppLink, "ko", TARGET_LANG_META.ko.name],
+  ];
+
+  languageLinks.forEach(([link, targetLang, label]) => {
+    if (!link) {
+      return;
+    }
+    link.textContent = label;
+    link.href = buildPublicAppUrl(targetLang, { mobile_app: "1", quiz: mode });
+    setCurrentLink(link, targetLang === lang);
+  });
+
+  if (els.mobileAppLink) {
+    els.mobileAppLink.href = buildPublicAppUrl(lang, { mobile_app: "1", quiz: mode });
+    setCurrentLink(els.mobileAppLink, true);
+  }
+  if (els.classicAppLink) {
+    els.classicAppLink.href = buildPublicAppUrl(lang, { classic: "1", quiz: mode });
+    setCurrentLink(els.classicAppLink, false);
+  }
 }
 
 function applyMobileConfig(config) {
@@ -1072,12 +1151,17 @@ function applyStaticText() {
   setText(els.quizNav, t("navQuiz"));
   setText(els.historyNav, t("navHistory"));
   setText(els.diagnosticsNav, t("navDiagnostics"));
+  setText(els.languageLinksLabel, t("languageLinks"));
+  setText(els.versionLinksLabel, t("displayLinks"));
+  setText(els.mobileAppLink, t("mobileVersion"));
+  setText(els.classicAppLink, t("classicVersion"));
   els.resultMetricLabels.forEach((node, index) => {
     setText(node, [t("accuracy"), t("points"), t("correct")][index]);
   });
   setAudioModeLabels();
   setRankingTabLabels();
   updateDirectionLabels();
+  renderAppLinks();
 }
 
 function setText(element, text) {
@@ -1734,6 +1818,7 @@ function switchMode(mode) {
 function renderSetup() {
   const mode = state.settings.mode;
   updateDirectionLabels();
+  renderAppLinks();
   els.modeVocab.classList.toggle("is-selected", mode === "vocab");
   els.modeSentence.classList.toggle("is-selected", mode === "sentence");
   els.modeVocab.setAttribute("aria-selected", String(mode === "vocab"));

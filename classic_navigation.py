@@ -24,16 +24,19 @@ MODE_SWITCH_LABELS = {
         "caption": "PC版モード",
         "vocab": "単語",
         "sentence": "例文",
+        "mobile": "スマホ版",
     },
     "zh": {
         "caption": "PC版模式",
         "vocab": "单词",
         "sentence": "例句",
+        "mobile": "手机版",
     },
     "ko": {
         "caption": "PC 버전 모드",
         "vocab": "단어",
         "sentence": "예문",
+        "mobile": "모바일판",
     },
 }
 
@@ -63,6 +66,8 @@ def render_classic_mode_switch(current_mode: str, target_lang: str = "ja") -> No
         label = html.escape(labels[mode])
         href = f"?quiz={mode}&classic=1"
         return f"<a class='{class_name}' href='{href}' target='_self' rel='nofollow'>{label}</a>"
+
+    mobile_href = f"?mobile_app=1&quiz={current}"
 
     st.markdown(
         f"""
@@ -103,6 +108,13 @@ def render_classic_mode_switch(current_mode: str, target_lang: str = "ja") -> No
             border-color: #0b7f5d;
             color: #ffffff !important;
         }}
+        .classic-mode-link-secondary {{
+            color: #5b654f !important;
+            background: #f6f7f2;
+        }}
+        .classic-mode-link-secondary:hover {{
+            color: #0b5c43 !important;
+        }}
         @media (max-width: 640px) {{
             .classic-mode-switch {{
                 margin-top: 0.2rem;
@@ -122,6 +134,9 @@ def render_classic_mode_switch(current_mode: str, target_lang: str = "ja") -> No
             <span class="classic-mode-caption">{html.escape(labels['caption'])}</span>
             {item("vocab")}
             {item("sentence")}
+            <a class="classic-mode-link classic-mode-link-secondary" href="{mobile_href}" target="_self" rel="nofollow">
+                {html.escape(labels["mobile"])}
+            </a>
         </nav>
         """,
         unsafe_allow_html=True,

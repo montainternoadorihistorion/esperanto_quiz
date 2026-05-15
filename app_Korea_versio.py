@@ -1074,36 +1074,34 @@ def main(*, set_page_config_once: bool = True):
             key="show_option_audio",
             help="OFF로 하면 선택지별 오디오 플레이어를 숨겨 가볍게 합니다.",
         )
-        st.checkbox(
-            "모바일 최적화 UI(문항+4지선다를 한 화면 우선)",
-            key="mobile_compact_ui",
-            help="모바일에서는 ON 권장. 데스크톱 표시에는 영향이 없습니다.",
-        )
-        if compact_ui:
+        if is_mobile:
             st.checkbox(
-                "모바일 최적화 시 선택지 음성을 자동으로 숨기기",
-                key="compact_hide_option_audio",
-                help="문항 음성은 유지하고, 선택지별 음성만 숨겨 세로 스크롤을 줄입니다.",
+                "기존판 모바일 표시 압축",
+                key="mobile_compact_ui",
+                help="모바일 전용 UI에 문제가 있을 때 쓰는 예비 설정입니다. 모바일에서 기존 Streamlit판을 열었을 때만 사용합니다.",
             )
-            st.checkbox(
-                "모바일 최적화 시 문제문 음성 플레이어 숨기기",
-                key="compact_hide_prompt_audio",
-                help="문항+4지선다를 한 화면에 담기 쉽게 합니다. 필요할 때만 OFF로 바꿔 표시하세요.",
-            )
-            st.checkbox(
-                "초압축 모드(소형 화면용)",
-                key="mobile_ultra_compact",
-                help="문항 영역과 버튼을 더 압축합니다.",
-            )
-            st.checkbox(
-                "모바일에서 상단 메뉴 숨기기",
-                key="mobile_hide_streamlit_chrome",
-                help="세로 공간을 늘립니다. 원래대로 돌리려면 OFF로 바꾸세요.",
-            )
-        st.caption(
-            f"기기 판정: {'모바일' if is_mobile else '데스크톱'} / "
-            f"최적화 UI: {'ON' if compact_ui else 'OFF'}"
-        )
+            if compact_ui:
+                st.checkbox(
+                    "모바일 최적화 시 선택지 음성을 자동으로 숨기기",
+                    key="compact_hide_option_audio",
+                    help="문항 음성은 유지하고, 선택지별 음성만 숨겨 세로 스크롤을 줄입니다.",
+                )
+                st.checkbox(
+                    "모바일 최적화 시 문제문 음성 플레이어 숨기기",
+                    key="compact_hide_prompt_audio",
+                    help="문항+4지선다를 한 화면에 담기 쉽게 합니다. 필요할 때만 OFF로 바꿔 표시하세요.",
+                )
+                st.checkbox(
+                    "초압축 모드(소형 화면용)",
+                    key="mobile_ultra_compact",
+                    help="문항 영역과 버튼을 더 압축합니다.",
+                )
+                st.checkbox(
+                    "모바일에서 상단 메뉴 숨기기",
+                    key="mobile_hide_streamlit_chrome",
+                    help="세로 공간을 늘립니다. 원래대로 돌리려면 OFF로 바꾸세요.",
+                )
+            st.caption(f"기기 판정: 모바일 / 기존판 압축: {'ON' if compact_ui else 'OFF'}")
         if st.button("퀴즈 시작", disabled=not selected_group, use_container_width=True):
             # 出題順は常にランダム（シードはグループ分けのみに使用）
             rng = random.Random()

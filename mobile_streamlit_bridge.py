@@ -4,6 +4,7 @@ from pathlib import Path
 import streamlit as st
 import streamlit.components.v1 as components
 
+from classic_navigation import get_classic_quiz_mode
 from mobile_ranking import load_mobile_rankings_request
 from mobile_score_sync import save_mobile_score_request
 
@@ -95,9 +96,10 @@ def render_mobile_app_entry(
     lang = str(target_lang or _mobile_lang_from_source(source)).strip().lower()
     if lang not in SUPPORTED_MOBILE_LANGS:
         lang = "ja"
-    mode = str(default_mode or _mobile_mode_from_source(source)).strip().lower()
-    if mode not in {"vocab", "sentence"}:
-        mode = "vocab"
+    fallback_mode = str(default_mode or _mobile_mode_from_source(source)).strip().lower()
+    if fallback_mode not in {"vocab", "sentence"}:
+        fallback_mode = "vocab"
+    mode = get_classic_quiz_mode(default=fallback_mode)
 
     st.session_state.setdefault("mobile_score_sync_result", None)
     st.session_state.setdefault("mobile_score_sync_processed", {})
@@ -189,7 +191,7 @@ def render_mobile_app_entry(
     st.markdown(
         f"""
         <div style="padding: 8px 12px 16px; text-align: center; font-size: 13px;">
-            <a href="?classic=1" target="_self" rel="nofollow" style="color: #075f46; font-weight: 700;">
+            <a href="?classic=1&quiz={mode}" target="_self" rel="nofollow" style="color: #075f46; font-weight: 700;">
                 {classic_label}
             </a>
         </div>

@@ -1215,37 +1215,35 @@ def main(*, set_page_config_once: bool = True):
             key="show_option_audio",
             help="关闭后不显示每个选项的音频播放器，以减轻负载。",
         )
-        st.checkbox(
-            "移动端紧凑UI（优先将题干+4选项放在一屏）",
-            key="mobile_compact_ui",
-            help="移动端建议开启；不会影响桌面端显示。",
-        )
-        if compact_ui:
+        if is_mobile:
             st.checkbox(
-                "紧凑UI下自动隐藏选项音频",
-                key="compact_hide_option_audio",
-                help="保留题干音频，仅隐藏每个选项的音频以减少纵向滚动。",
+                "压缩传统版手机显示",
+                key="mobile_compact_ui",
+                help="这是手机专用UI出现问题时的备用设置，只在手机打开传统Streamlit版时使用。",
             )
-            st.checkbox(
-                "紧凑UI下隐藏题干音频播放器",
-                key="compact_hide_prompt_audio",
-                help="更容易把题干+4选项放进一屏；需要时再关闭此项显示。",
-            )
-            st.checkbox(
-                "超紧凑模式（小屏优先）",
-                key="mobile_ultra_compact",
-                help="进一步压缩题干区域与按钮高度。",
-            )
-            st.checkbox(
-                "移动端隐藏顶部菜单栏",
-                key="mobile_hide_streamlit_chrome",
-                help="增加可用纵向空间；如需恢复默认可关闭此项。",
-            )
+            if compact_ui:
+                st.checkbox(
+                    "紧凑UI下自动隐藏选项音频",
+                    key="compact_hide_option_audio",
+                    help="保留题干音频，仅隐藏每个选项的音频以减少纵向滚动。",
+                )
+                st.checkbox(
+                    "紧凑UI下隐藏题干音频播放器",
+                    key="compact_hide_prompt_audio",
+                    help="更容易把题干+4选项放进一屏；需要时再关闭此项显示。",
+                )
+                st.checkbox(
+                    "超紧凑模式（小屏优先）",
+                    key="mobile_ultra_compact",
+                    help="进一步压缩题干区域与按钮高度。",
+                )
+                st.checkbox(
+                    "移动端隐藏顶部菜单栏",
+                    key="mobile_hide_streamlit_chrome",
+                    help="增加可用纵向空间；如需恢复默认可关闭此项。",
+                )
+            st.caption(f"设备判定: 移动端 / 传统版压缩: {'ON' if compact_ui else 'OFF'}")
         st.caption("无论出题方向，只要开启开关就会显示选项音频。移动端卡顿时建议关闭。")
-        st.caption(
-            f"设备判定: {'移动端' if is_mobile else '桌面端'} / "
-            f"优化UI: {'ON' if compact_ui else 'OFF'}"
-        )
 
         if st.button("开始测验", use_container_width=True):
             rng = random.Random()

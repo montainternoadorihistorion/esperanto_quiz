@@ -39,8 +39,13 @@ test("mobile quiz state survives reload", async ({ page }) => {
 
   await page.locator("#modeSentence").click();
   await expect(page.locator("#modeSentence")).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator("#classicAppLink")).toHaveAttribute("href", /classic=1&quiz=sentence/);
   await page.locator("#modeVocab").click();
   await expect(page.locator("#modeVocab")).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator("#jaAppLink")).toHaveClass(/is-active/);
+  await expect(page.locator("#zhAppLink")).toHaveAttribute("href", /esperanto-quiz-zh\.streamlit\.app\/\?mobile_app=1&quiz=vocab/);
+  await expect(page.locator("#classicAppLink")).toHaveAttribute("target", "_top");
+  await expect(page.locator("#classicAppLink")).toHaveAttribute("href", /classic=1&quiz=vocab/);
 
   const setupMetrics = await page.evaluate(() => {
     const start = document.querySelector("#startButton");
@@ -167,6 +172,8 @@ test("mobile app can quiz with Chinese and Korean target translations", async ({
   zhUrl.searchParams.set("mode", "vocab");
   await page.goto(zhUrl.toString(), { waitUntil: "networkidle" });
   await expect(page.locator("#modeVocab")).toHaveText("单词");
+  await expect(page.locator("#languageLinksLabel")).toHaveText("语言");
+  await expect(page.locator("#classicAppLink")).toHaveText("电脑版");
   await expect(page.locator("#directionSelect option[value='eo_to_ja']")).toHaveText("世界语 → 中文");
   await expect(page.locator("#historyNav")).toHaveText("成绩");
   await expect(page.locator("#diagnosticsNav")).toHaveText("诊断");
@@ -197,6 +204,8 @@ test("mobile app can quiz with Chinese and Korean target translations", async ({
   koUrl.searchParams.set("mode", "sentence");
   await koPage.goto(koUrl.toString(), { waitUntil: "networkidle" });
   await expect(koPage.locator("#modeSentence")).toHaveText("예문");
+  await expect(koPage.locator("#languageLinksLabel")).toHaveText("언어");
+  await expect(koPage.locator("#classicAppLink")).toHaveText("PC판");
   await expect(koPage.locator("#directionSelect option[value='eo_to_ja']")).toHaveText("에스페란토 → 한국어");
   await expect(koPage.locator("#historyNav")).toHaveText("성적");
   await expect(koPage.locator("#diagnosticsNav")).toHaveText("진단");

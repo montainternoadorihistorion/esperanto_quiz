@@ -832,6 +832,70 @@ select {
   overflow-wrap: anywhere;
 }
 
+.app-link-panel {
+  display: grid;
+  width: min(calc(100% - 24px), 720px);
+  gap: 10px;
+  margin: 0 auto calc(var(--nav-height) + 16px + env(safe-area-inset-bottom));
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 10px 12px;
+}
+
+.app-shell.view-loading .app-link-panel,
+.app-shell.view-quiz .app-link-panel {
+  display: none;
+}
+
+.app-shell.view-setup .app-link-panel {
+  margin-bottom: 12px;
+}
+
+.app-link-group {
+  display: grid;
+  gap: 6px;
+}
+
+.app-link-group > span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.app-link-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.version-link-row {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.app-link-row a {
+  display: flex;
+  min-width: 0;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--primary-strong);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+}
+
+.app-link-row a.is-active {
+  border-color: rgba(7, 95, 70, 0.24);
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+}
+
 .bottom-nav {
   position: fixed;
   right: 0;

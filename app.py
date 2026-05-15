@@ -1040,36 +1040,34 @@ def main(*, set_page_config_once: bool = True):
             key="show_option_audio",
             help="オフにすると選択肢ごとの音声プレイヤーを非表示にして軽量化します。",
         )
-        st.checkbox(
-            "スマホ最適化UI（設問+4択を1画面優先）",
-            key="mobile_compact_ui",
-            help="モバイルではON推奨。デスクトップ表示には影響しません。",
-        )
-        if compact_ui:
+        if is_mobile:
             st.checkbox(
-                "スマホ最適化時は選択肢の音声を自動で隠す",
-                key="compact_hide_option_audio",
-                help="問題文の音声は維持しつつ、選択肢ごとの音声表示だけ抑制して縦スクロールを減らします。",
+                "従来版スマホ表示を圧縮",
+                key="mobile_compact_ui",
+                help="スマホ専用UIに問題がある場合の保険です。従来Streamlit版をスマホで開いた時だけ使います。",
             )
-            st.checkbox(
-                "スマホ最適化時は問題文音声プレイヤーを隠す",
-                key="compact_hide_prompt_audio",
-                help="設問+4択を1画面に収めやすくします。必要時のみOFFにして表示してください。",
-            )
-            st.checkbox(
-                "超圧縮モード（小画面向け）",
-                key="mobile_ultra_compact",
-                help="設問エリア・ボタンをさらに圧縮します。",
-            )
-            st.checkbox(
-                "スマホ時に上部メニュー類を隠す",
-                key="mobile_hide_streamlit_chrome",
-                help="縦領域を増やします。通常操作に戻したい場合はOFFにしてください。",
-            )
-        st.caption(
-            f"端末判定: {'モバイル' if is_mobile else 'デスクトップ'} / "
-            f"最適化UI: {'ON' if compact_ui else 'OFF'}"
-        )
+            if compact_ui:
+                st.checkbox(
+                    "スマホ最適化時は選択肢の音声を自動で隠す",
+                    key="compact_hide_option_audio",
+                    help="問題文の音声は維持しつつ、選択肢ごとの音声表示だけ抑制して縦スクロールを減らします。",
+                )
+                st.checkbox(
+                    "スマホ最適化時は問題文音声プレイヤーを隠す",
+                    key="compact_hide_prompt_audio",
+                    help="設問+4択を1画面に収めやすくします。必要時のみOFFにして表示してください。",
+                )
+                st.checkbox(
+                    "超圧縮モード（小画面向け）",
+                    key="mobile_ultra_compact",
+                    help="設問エリア・ボタンをさらに圧縮します。",
+                )
+                st.checkbox(
+                    "スマホ時に上部メニュー類を隠す",
+                    key="mobile_hide_streamlit_chrome",
+                    help="縦領域を増やします。通常操作に戻したい場合はOFFにしてください。",
+                )
+            st.caption(f"端末判定: モバイル / 従来版圧縮: {'ON' if compact_ui else 'OFF'}")
         if st.button("クイズ開始", disabled=not selected_group, use_container_width=True):
             # 出題順は常にランダム（シードはグループ分けのみに使用）
             rng = random.Random()

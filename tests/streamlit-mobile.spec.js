@@ -42,8 +42,12 @@ test("Streamlit mobile entry uses the localStorage app and survives reload", asy
 
   await mobileApp.locator("#modeSentence").click();
   await expect(mobileApp.locator("#modeSentence")).toHaveAttribute("aria-selected", "true");
+  await expect(mobileApp.locator("#classicAppLink")).toHaveAttribute("href", /classic=1&quiz=sentence/);
   await mobileApp.locator("#modeVocab").click();
   await expect(mobileApp.locator("#modeVocab")).toHaveAttribute("aria-selected", "true");
+  await expect(mobileApp.locator("#jaAppLink")).toHaveClass(/is-active/);
+  await expect(mobileApp.locator("#classicAppLink")).toHaveAttribute("target", "_top");
+  await expect(mobileApp.locator("#classicAppLink")).toHaveAttribute("href", /esperanto-quiz\.streamlit\.app\/\?classic=1&quiz=vocab/);
   await mobileApp.locator("#directionSelect").selectOption("ja_to_eo");
   await expect(mobileApp.locator("#directionSelect")).toHaveValue("ja_to_eo");
   await mobileApp.locator("#directionSelect").selectOption("eo_to_ja");

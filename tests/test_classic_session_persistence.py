@@ -1,9 +1,12 @@
 import unittest
+from unittest.mock import patch
 
 from classic_session_persistence import (
     build_classic_session_snapshot,
     classic_storage_key,
     describe_classic_session_snapshot,
+    render_classic_session_loader,
+    request_classic_session_clear,
     validate_classic_session_snapshot,
 )
 
@@ -165,6 +168,16 @@ class ClassicSessionPersistenceTests(unittest.TestCase):
         self.assertIn("用户: Learner", describe_classic_session_snapshot(zh_snapshot))
         self.assertIn("예문 퀴즈", describe_classic_session_snapshot(ko_snapshot))
         self.assertIn("사용자: Learner", describe_classic_session_snapshot(ko_snapshot))
+
+    def test_loader_skips_browser_load_while_clear_is_pending(self):
+        session_state = {}
+        with patch("classic_session_persistence.st.session_state", session_state), patch(
+            "classic_session_persistence._classic_state_component"
+        ) as component:
+            request_classic_session_clear("vocab")
+
+            self.assertIsNone(render_classic_session_loader("vocab", target_lang="ja"))
+            component.assert_not_called()
 
 
 if __name__ == "__main__":

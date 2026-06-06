@@ -78,6 +78,8 @@ def render_classic_session_loader(app_kind: str, target_lang: str = "ja") -> Opt
     app = _normalize_app_kind(app_kind)
     if st.session_state.get("questions"):
         return None
+    if st.session_state.get(_clear_requested_key(app)):
+        return None
 
     candidate_key = _candidate_key(app)
     candidate = st.session_state.get(candidate_key)

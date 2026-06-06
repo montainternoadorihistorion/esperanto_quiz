@@ -9,14 +9,26 @@ import streamlit as st
 from streamlit_gsheets import GSheetsConnection
 
 from data_sources import PHRASE_CSV
-from score_append_utils import (
-    append_score_row_fast,
-    append_score_row_safe,
-    compute_user_score_totals,
-    load_sheet_records,
-    upsert_user_total,
+from quiz_scoring import (
+    SENTENCE_ACCURACY_BONUS as ACCURACY_BONUS_PER_Q,
+    SENTENCE_SCORE_SCALE,
+    SENTENCE_STREAK_SCALE as STREAK_BONUS_SCALE,
+    SPARTAN_SCORE_MULTIPLIER,
+    STREAK_BONUS,
+    compute_result_summary,
+    scale_spartan_points,
+    score_for_correct,
+    sentence_base_points_for_level as base_points_for_level,
 )
-from score_row_utils import infer_mode, normalize_score_row, normalize_score_rows
+from ranking_utils import rank_dict as shared_rank_dict
+from ranking_utils import summarize_rankings_from_stats as shared_summarize_rankings_from_stats
+from score_sync_service import (
+    append_score_record,
+    load_score_totals_for_user,
+    update_overall_user_stats,
+    update_sentence_user_stats,
+)
+from score_row_utils import normalize_score_rows
 from mobile_streamlit_bridge import render_mobile_app_entry
 from classic_navigation import get_classic_quiz_mode, render_classic_mode_switch
 import vocab_grouping as vg
@@ -25,14 +37,6 @@ import vocab_grouping as vg
 BASE_DIR = Path(__file__).resolve().parent
 PHRASE_AUDIO_DIR = BASE_DIR / "Esperanto例文5000文_収録音声"
 
-# スコア설정
-STREAK_BONUS = 0.5
-TARGET_SENTENCE_SCORE_FACTOR = 2.0
-LEGACY_SENTENCE_SCORE_FACTOR = 1.5
-SENTENCE_SCORE_SCALE = TARGET_SENTENCE_SCORE_FACTOR / LEGACY_SENTENCE_SCORE_FACTOR
-STREAK_BONUS_SCALE = TARGET_SENTENCE_SCORE_FACTOR
-ACCURACY_BONUS_PER_Q = 5.0 * TARGET_SENTENCE_SCORE_FACTOR
-SPARTAN_SCORE_MULTIPLIER = 0.7
 SCORES_SHEET = "Scores"
 USER_STATS_SHEET = "UserStatsSentence"  # 文章専用の累積
 USER_STATS_MAIN = "UserStats"  # 単語と共通累積（全体）
@@ -52,8 +56,6 @@ DESKTOP_UA_TOKENS = (
 )
 SCORE_READ_RETRIES = 3
 SCORE_READ_RETRY_BASE_SEC = 0.35
-SCORE_WRITE_RETRIES = 3
-SCORE_WRITE_RETRY_BASE_SEC = 0.4
 DEBUG_QUERY_VALUES = {"1", "true", "yes", "on"}
 RECENT_SCORES_LIMIT = 200
 AUDIO_CACHE_MAX_ENTRIES = 256
@@ -124,10 +126,6 @@ def get_connection():
         # User-facing warnings are handled by loader state to avoid duplicate error boxes.
         print(f"Google Sheets connection init failed: {e}")
         return None
-
-
-def base_points_for_level(level: int) -> float:
-    return (level + 11.5) * SENTENCE_SCORE_SCALE
 
 
 def safe_float(value, default: float = 0.0) -> float:
@@ -417,49 +415,21 @@ def load_scores_all(force_refresh: bool = False, *, include_status: bool = False
 
 
 def save_score(record: dict):
-    record_to_save = normalize_score_row(record, fallback_mode="sentence")
-    save_id = str(record_to_save.get("save_id", "")).strip()
-    record_to_save["save_id"] = save_id or str(uuid.uuid4())
-    fast_saved = append_score_row_fast(record_to_save, worksheet_name=SCORES_SHEET)
-    if fast_saved is True:
-        return True
-    return append_score_row_safe(
-        record_to_save,
-        worksheet_name=SCORES_SHEET,
-        retries=SCORE_WRITE_RETRIES,
-        retry_base_sec=SCORE_WRITE_RETRY_BASE_SEC,
-    )
+    return append_score_record(record, fallback_mode="sentence")
 
 
 def _load_score_totals_for_user(user: str):
-    records = load_sheet_records(SCORES_SHEET, refresh=True)
-    if records is None:
-        return None
-    return compute_user_score_totals(records, user)
-
-
-def _update_stats(sheet_name: str, user: str, points: float, ts: str, totals=None):
-    del points
-    current_totals = totals if totals is not None else _load_score_totals_for_user(user)
-    if current_totals is None:
-        return False
-    total_points = current_totals["sentence"] if sheet_name == USER_STATS_SHEET else current_totals["overall"]
-    return upsert_user_total(
-        sheet_name,
-        user=user,
-        total_points=total_points,
-        last_updated=ts,
-        retries=SCORE_WRITE_RETRIES,
-        retry_base_sec=SCORE_WRITE_RETRY_BASE_SEC,
-    )
+    return load_score_totals_for_user(user)
 
 
 def update_user_stats(user: str, points: float, ts: str, totals=None):
-    return _update_stats(USER_STATS_SHEET, user, points, ts, totals=totals)
+    del points
+    return update_sentence_user_stats(user=user, last_updated=ts, totals=totals)
 
 
 def update_user_stats_main(user: str, points: float, ts: str, totals=None):
-    return _update_stats(USER_STATS_MAIN, user, points, ts, totals=totals)
+    del points
+    return update_overall_user_stats(user=user, last_updated=ts, totals=totals)
 
 
 def load_rankings(force_refresh: bool = False, *, include_status: bool = False):
@@ -660,46 +630,16 @@ def summarize_scores(scores):
 
 
 def summarize_rankings_from_stats(stats_data, score_rows=None):
-    totals = {}
-    if stats_data and isinstance(stats_data, list):
-        first_row = stats_data[0] if stats_data else {}
-        is_raw_log = "total_points" not in first_row and "points" in first_row
-    else:
-        is_raw_log = False
-
-    if is_raw_log:
-        for r in stats_data or []:
-            user = str(r.get("user", "")).strip()
-            if not user:
-                continue
-            totals[user] = totals.get(user, 0.0) + safe_float(r.get("points", 0), 0.0)
-    else:
-        for r in stats_data or []:
-            user = str(r.get("user", "")).strip()
-            if not user:
-                continue
-            val = r.get("total_points")
-            if val is None:
-                for k in r.keys():
-                    if "total_points" in k:
-                        val = r[k]
-                        break
-            totals[user] = max(safe_float(totals.get(user, 0.0), 0.0), safe_float(val, 0.0))
-
     scores = score_rows if score_rows is not None else load_scores()
-    score_totals, totals_today, totals_month, _ = summarize_scores(scores)
-    if totals:
-        for user, log_total in score_totals.items():
-            totals[user] = max(safe_float(totals.get(user, 0.0), 0.0), safe_float(log_total, 0.0))
-    else:
-        totals = score_totals
-    hof = {u: p for u, p in totals.items() if p >= HOF_THRESHOLD}
-    return totals, totals_today, totals_month, hof
+    return shared_summarize_rankings_from_stats(
+        stats_data,
+        score_rows=scores,
+        hof_threshold=HOF_THRESHOLD,
+    )
 
 
 def rank_dict(d, top_n=None):
-    items = sorted(d.items(), key=lambda x: x[1], reverse=True)
-    return items[:top_n] if top_n else items
+    return shared_rank_dict(d, top_n=top_n)
 
 
 def show_rankings(stats_data, key_suffix: str = "", score_rows=None):
@@ -1124,7 +1064,7 @@ def main(*, set_page_config_once: bool = True):
                         f"- 기본점: (레벨 + 11.5) × {SENTENCE_SCORE_SCALE:.4g}(예: Lv5→{base_points_for_level(5):.1f}점)",
                         f"- 연속 정답 보너스: 2문제째부터 연속 정답 1회당 +{STREAK_BONUS * STREAK_BONUS_SCALE:.1f}",
                         f"- 정확도 보너스: 최종 정답률 × 문제수 × {ACCURACY_BONUS_PER_Q:.1f}",
-                        "- 스파르타 모드: 복습 분량은 0.7배로 합산(정확도 보너스 없음)",
+                        f"- 스파르타 모드: 복습 분량은 {SPARTAN_SCORE_MULTIPLIER:.1f}배로 합산(정확도 보너스 없음)",
                         "- 같은 문제수라면 단어 버전보다 약 2.0배 점수가 오르는 설정입니다.",
                     ]
                 )
@@ -1205,7 +1145,7 @@ def main(*, set_page_config_once: bool = True):
         )[0]
         st.session_state.direction = direction
         st.checkbox(
-            "스파르타 모드(모든 문제 후 틀린 것만 정답할 때까지 무작위 출제 · 점수 0.7배)",
+            f"스파르타 모드(모든 문제 후 틀린 것만 정답할 때까지 무작위 출제 · 점수 {SPARTAN_SCORE_MULTIPLIER:.1f}배)",
             key="spartan_mode",
             disabled=bool(st.session_state.questions),
         )
@@ -1491,16 +1431,23 @@ def main(*, set_page_config_once: bool = True):
 
     if q_idx >= len(questions) and not st.session_state.in_spartan_round:
         total = len(questions)
-        accuracy = st.session_state.correct / total if total else 0
-        acc_bonus = accuracy * total * ACCURACY_BONUS_PER_Q
         raw_main = st.session_state.points_main
         raw_spartan_raw = st.session_state.points_spartan_raw
         raw_spartan_scaled = st.session_state.points_spartan_scaled
+        base_points = raw_main + raw_spartan_scaled
+        summary = compute_result_summary(
+            mode="sentence",
+            total=total,
+            correct=st.session_state.correct,
+            main_points=raw_main,
+            spartan_scaled_points=raw_spartan_scaled,
+        )
+        accuracy = summary["accuracy"]
+        acc_bonus = summary["accuracyBonus"]
+        points = summary["points"]
         sp_attempts = st.session_state.spartan_attempts
         sp_correct = st.session_state.spartan_correct_count
         sp_accuracy = sp_correct / sp_attempts if sp_attempts else 0
-        base_points = raw_main + raw_spartan_scaled
-        points = base_points + acc_bonus
         st.subheader("결과")
         st.metric("정답률", f"{accuracy*100:.1f}%")
         st.metric("점수", f"{points:.1f}")
@@ -1533,7 +1480,8 @@ def main(*, set_page_config_once: bool = True):
         st.caption("음성으로 다시 확인할 수 있습니다.")
         st.write(f"정답 {st.session_state.correct}/{total}")
         st.write(
-            f"내역: 본편 기본+연속 보너스 {raw_main:.1f} / 스파르타 {raw_spartan_scaled:.1f}(정확도 보너스 없음·0.7배 포함) / 정확도 보너스 {acc_bonus:.1f}"
+            f"내역: 본편 기본+연속 보너스 {raw_main:.1f} / 스파르타 {raw_spartan_scaled:.1f}"
+            f"(정확도 보너스 없음·{SPARTAN_SCORE_MULTIPLIER:.1f}배 포함) / 정확도 보너스 {acc_bonus:.1f}"
         )
         if st.session_state.spartan_mode and sp_attempts:
             st.caption(f"스파르타 모드: 복습분을 일반의 {SPARTAN_SCORE_MULTIPLIER*100:.0f}%로 합산(정확도 보너스 없음)")
@@ -1545,6 +1493,8 @@ def main(*, set_page_config_once: bool = True):
                 if st.session_state.get("score_sync_warning"):
                     st.warning(st.session_state.score_sync_warning)
             else:
+                if st.session_state.get("score_sync_warning"):
+                    st.warning(st.session_state.score_sync_warning)
                 st.caption("저장하면 랭킹에 반영됩니다. 실패하면 다시 시도해주세요.")
                 if st.button("점수 저장", use_container_width=True):
                     now = datetime.datetime.utcnow().isoformat()
@@ -1596,8 +1546,6 @@ def main(*, set_page_config_once: bool = True):
                             now,
                             totals=totals,
                         )
-                        st.session_state.score_saved = True
-                        st.session_state.pending_save_id = None
                         optimistic_projection = (
                             overall_points + points if overall_available else user_total_sentence + points
                         )
@@ -1615,7 +1563,16 @@ def main(*, set_page_config_once: bool = True):
                         st.session_state.cached_scores_all_status = _load_status()
                         st.session_state.cached_main_rank = []
                         st.session_state.cached_main_rank_status = _load_status()
-                        st.session_state.score_sync_warning = None if (ok_sentence and ok_main) else "점수 로그는 저장했지만 누적 점수 동기화가 일시적으로 실패했습니다. 잠시 후 다시 시도해주세요."
+                        if ok_sentence and ok_main:
+                            st.session_state.score_saved = True
+                            st.session_state.pending_save_id = None
+                            st.session_state.score_sync_warning = None
+                        else:
+                            st.session_state.score_saved = False
+                            st.session_state.score_sync_warning = (
+                                "점수 로그는 저장되었습니다. 누적 점수 반영만 실패했으므로 "
+                                "다시 누르면 같은 저장 ID로 안전하게 재업데이트합니다."
+                            )
                         st.rerun()
         recent = scores  # 既に読み込んだデータを再利用
         if recent:
@@ -1880,11 +1837,14 @@ def main(*, set_page_config_once: bool = True):
                 st.session_state.spartan_correct_count += 1
             st.session_state.streak += 1
             opt = question["options"][clicked]
-            streak_bonus = max(0, st.session_state.streak - 1) * STREAK_BONUS * STREAK_BONUS_SCALE
-            earned = base_points_for_level(opt["level"]) + streak_bonus
+            earned = score_for_correct(
+                mode="sentence",
+                streak=st.session_state.streak,
+                level=opt["level"],
+            )
             if in_spartan:
                 st.session_state.points_spartan_raw += earned
-                scaled = earned * SPARTAN_SCORE_MULTIPLIER
+                scaled = scale_spartan_points(earned)
                 st.session_state.points_spartan_scaled += scaled
                 st.session_state.points_raw += scaled
                 st.session_state.spartan_pending = [

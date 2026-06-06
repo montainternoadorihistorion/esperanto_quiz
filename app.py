@@ -9,16 +9,20 @@ import streamlit as st
 import pandas as pd
 
 from data_sources import VOCAB_CSV
+from quiz_scoring import (
+    BASE_POINTS,
+    SPARTAN_SCORE_MULTIPLIER,
+    STREAK_BONUS,
+    VOCAB_ACCURACY_BONUS as ACCURACY_BONUS_PER_Q,
+    VOCAB_STAGE_FACTORS,
+    compute_result_summary,
+    scale_spartan_points,
+    score_for_correct,
+)
 from ranking_utils import rank_dict as shared_rank_dict
 from ranking_utils import summarize_rankings_from_stats as shared_summarize_rankings_from_stats
-from score_append_utils import (
-    append_score_row_fast,
-    append_score_row_safe,
-    compute_user_score_totals,
-    load_sheet_records,
-    upsert_user_total,
-)
-from score_row_utils import normalize_score_row, normalize_score_rows
+from score_sync_service import append_score_record, update_overall_user_stats
+from score_row_utils import normalize_score_rows
 from mobile_streamlit_bridge import render_mobile_app_entry
 from classic_navigation import get_classic_quiz_mode, render_classic_mode_switch
 import vocab_grouping as vg
@@ -30,19 +34,6 @@ CSV_PATH = VOCAB_CSV
 AUDIO_DIR = BASE_DIR / "audio"
 SCORE_FILE = Path("scores.json")
 
-# スコア設定
-BASE_POINTS = 10
-STAGE_MULTIPLIER = {
-    "beginner": 1.0,
-    "intermediate": 1.3,  # 格差縮小: 1.5→1.3
-    "advanced": 1.6,      # 格差縮小: 2.0→1.6
-}
-# 連続正解ボーナス: 2問目以降の連続正解1回あたり加算 (さらに半減: 1.0→0.5)
-STREAK_BONUS = 0.5
-# 最終精度ボーナス: accuracy * 問題数 * この値 (増加: 4.0→5.0)
-ACCURACY_BONUS_PER_Q = 5.0
-# スパルタモード時の得点係数（通常の約7割）
-SPARTAN_SCORE_MULTIPLIER = 0.7
 # 殿堂入りライン
 HOF_THRESHOLD = 1000000
 MOBILE_UA_TOKENS = (
@@ -60,8 +51,6 @@ DESKTOP_UA_TOKENS = (
 )
 SCORE_READ_RETRIES = 3
 SCORE_READ_RETRY_BASE_SEC = 0.35
-SCORE_WRITE_RETRIES = 3
-SCORE_WRITE_RETRY_BASE_SEC = 0.4
 SCORES_SHEET = "Scores"
 USER_STATS_SHEET = "UserStats"
 DEBUG_QUERY_VALUES = {"1", "true", "yes", "on"}
@@ -250,35 +239,15 @@ def _ranking_status_notice(status):
 
 def save_score(record: dict):
     """Google Sheetsにスコアを追記する"""
-    record_to_save = normalize_score_row(record, fallback_mode="vocab")
-    save_id = str(record_to_save.get("save_id", "")).strip()
-    record_to_save["save_id"] = save_id or str(uuid.uuid4())
-    fast_saved = append_score_row_fast(record_to_save, worksheet_name=SCORES_SHEET)
-    if fast_saved is True:
-        return True
-    return append_score_row_safe(
-        record_to_save,
-        worksheet_name=SCORES_SHEET,
-        retries=SCORE_WRITE_RETRIES,
-        retry_base_sec=SCORE_WRITE_RETRY_BASE_SEC,
-    )
+    return append_score_record(record, fallback_mode="vocab")
 
 
 def update_user_stats(user: str, points: float, ts: str):
     """UserStatsシート（累積スコア）を更新する"""
     del points
-    records = load_sheet_records(SCORES_SHEET, refresh=True)
-    if records is None:
-        print("UserStats update error: Scores sheet could not be read.")
-        return False
-    totals = compute_user_score_totals(records, user)
-    ok = upsert_user_total(
-        USER_STATS_SHEET,
+    ok = update_overall_user_stats(
         user=user,
-        total_points=totals["overall"],
         last_updated=ts,
-        retries=SCORE_WRITE_RETRIES,
-        retry_base_sec=SCORE_WRITE_RETRY_BASE_SEC,
     )
     if not ok:
         print("UserStats update error: row upsert failed.")
@@ -314,17 +283,6 @@ def load_rankings(force_refresh: bool = False, *, include_status: bool = False):
         if cached_rankings:
             return finish(cached_rankings, source="cache", exact=False, error=str(e))
         return finish([], source="unavailable", exact=False, error=str(e))
-
-
-def get_stage_factor(stages):
-    # Use the highest stage present; order of labels should not affect scoring.
-    if any("advanced" in label for label in stages):
-        return STAGE_MULTIPLIER["advanced"]
-    if any("intermediate" in label for label in stages):
-        return STAGE_MULTIPLIER["intermediate"]
-    if any("beginner" in label for label in stages):
-        return STAGE_MULTIPLIER["beginner"]
-    return 1.0
 
 
 def safe_float(value, default: float = 0.0) -> float:
@@ -989,10 +947,13 @@ def main(*, set_page_config_once: bool = True):
             st.markdown(
                 "\n".join(
                     [
-                        f"- 基礎点: {BASE_POINTS} × レベル倍率 (初級1.0 / 中級1.3 / 上級1.6)",
+                        f"- 基礎点: {BASE_POINTS} × レベル倍率 "
+                        f"(初級{VOCAB_STAGE_FACTORS['beginner']:.1f} / "
+                        f"中級{VOCAB_STAGE_FACTORS['intermediate']:.1f} / "
+                        f"上級{VOCAB_STAGE_FACTORS['advanced']:.1f})",
                         f"- 連続正解ボーナス: 2問目以降の連続正解1回につき +{STREAK_BONUS}",
                         f"- 精度ボーナス: 最終正答率 × 問題数 × {ACCURACY_BONUS_PER_Q}",
-                        "- スパルタ精度ボーナス: なし（復習分は基礎+難易度のみを0.7倍で加算）",
+                        f"- スパルタ精度ボーナス: なし（復習分は基礎+難易度のみを{SPARTAN_SCORE_MULTIPLIER:.1f}倍で加算）",
                         "- グループを出し切ると結果画面でボーナス込みの合計を表示します。",
                     ]
                 )
@@ -1023,7 +984,7 @@ def main(*, set_page_config_once: bool = True):
         choice = st.selectbox("グループを選択", group_labels)
         selected_group = group_options[group_labels.index(choice)] if group_options else None
         st.checkbox(
-            "スパルタモード（全問後に間違えた問題だけ正解するまでランダム出題・得点0.7倍）",
+            f"スパルタモード（全問後に間違えた問題だけ正解するまでランダム出題・得点{SPARTAN_SCORE_MULTIPLIER:.1f}倍）",
             key="spartan_mode",
             disabled=bool(st.session_state.questions),
         )
@@ -1247,7 +1208,6 @@ def main(*, set_page_config_once: bool = True):
     if q_index >= len(questions) and not st.session_state.in_spartan_round:
         correct = st.session_state.correct
         total = len(questions)
-        accuracy = correct / total if total else 0
         # スパルタ部の精度
         sp_attempts = st.session_state.spartan_attempts
         sp_correct = st.session_state.spartan_correct_count
@@ -1256,9 +1216,17 @@ def main(*, set_page_config_once: bool = True):
         raw_points_main = st.session_state.main_points
         raw_points_spartan = st.session_state.spartan_points
         raw_points_total = raw_points_main + raw_points_spartan
-        accuracy_bonus = accuracy * total * ACCURACY_BONUS_PER_Q
-        spartan_scaled = raw_points_spartan * SPARTAN_SCORE_MULTIPLIER
-        points = raw_points_main + accuracy_bonus + spartan_scaled
+        spartan_scaled = scale_spartan_points(raw_points_spartan)
+        summary = compute_result_summary(
+            mode="vocab",
+            total=total,
+            correct=correct,
+            main_points=raw_points_main,
+            spartan_scaled_points=spartan_scaled,
+        )
+        accuracy = summary["accuracy"]
+        accuracy_bonus = summary["accuracyBonus"]
+        points = summary["points"]
         st.subheader("結果")
         st.metric("正答率", f"{accuracy*100:.1f}%")
         st.metric("得点", f"{points:.1f}")
@@ -1281,6 +1249,8 @@ def main(*, set_page_config_once: bool = True):
                 if st.session_state.get("score_sync_warning"):
                     st.warning(st.session_state.score_sync_warning)
             else:
+                if st.session_state.get("score_sync_warning"):
+                    st.warning(st.session_state.score_sync_warning)
                 st.caption("保存するとランキングにも反映されます。失敗したらもう一度お試しください。")
                 if st.button("スコアを保存", key="save_score_btn", use_container_width=True):
                     now = datetime.datetime.utcnow().isoformat()
@@ -1315,10 +1285,17 @@ def main(*, set_page_config_once: bool = True):
                     if save_score(record):
                         # UserStats更新（累積）はベストエフォート
                         stats_ok = update_user_stats(normalized_user_name, points, now)
-                        st.session_state.score_saved = True
-                        st.session_state.pending_save_id = None
                         st.session_state.score_refresh_needed = True
-                        st.session_state.score_sync_warning = None if stats_ok else "スコアログは保存しましたが、累積スコア反映に一時失敗しました。少し時間をおいて再試行してください。"
+                        if stats_ok:
+                            st.session_state.score_saved = True
+                            st.session_state.pending_save_id = None
+                            st.session_state.score_sync_warning = None
+                        else:
+                            st.session_state.score_saved = False
+                            st.session_state.score_sync_warning = (
+                                "スコアログは保存済みです。累積スコア反映だけ失敗したため、"
+                                "もう一度押すと同じ保存IDで安全に再更新します。"
+                            )
                         st.rerun()
                     else:
                         st.error("保存に失敗しました。秘密情報（secrets）の設定を確認してください。")
@@ -1587,10 +1564,12 @@ def main(*, set_page_config_once: bool = True):
 
         if is_correct:
             # 正解時は即座に次へ（ユーザー要望）
-            factor = get_stage_factor(question["stages"])
             st.session_state.streak += 1
-            streak_bonus = max(0, st.session_state.streak - 1) * STREAK_BONUS
-            earned = BASE_POINTS * factor + streak_bonus
+            earned = score_for_correct(
+                mode="vocab",
+                streak=st.session_state.streak,
+                stages=question["stages"],
+            )
 
             if not in_spartan:
                 st.session_state.main_points += earned

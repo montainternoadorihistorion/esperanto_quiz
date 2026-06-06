@@ -12,3 +12,11 @@ Streamlit Cloudアップロード用_Chrome生成AI指示書.md
 
 # OS noise
 .DS_Store
+
+# Python/runtime generated files
+__pycache__/
+*.py[cod]
+
+# Test artifacts
+test-results/
+playwright-report/

@@ -7,6 +7,7 @@ const APP_SHELL = [
   "./mobile_app/index.html",
   "./mobile_app/styles.css",
   "./mobile_app/app.js",
+  "./mobile_app/quiz_core.mjs",
   "./mobile_app/manifest.webmanifest",
   "./mobile_app/icon.svg",
   "./mobile_app/data/vocab.json",

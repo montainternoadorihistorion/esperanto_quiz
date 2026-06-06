@@ -12,8 +12,38 @@ from data_sources import VOCAB_CSV
 
 
 # -------- パラメータ --------
-# ランダムシードは 1〜8192 を想定（それ以外も受け付けるが再現性のため範囲を推奨）
+# ランダムシードは 1〜8192 に丸める。PC版とスマホ版で同じグループ内容にするため、
+# グループ分割にはPython標準乱数ではなくJS版と同じmulberry32を使う。
 DEFAULT_SEED = 1
+SEED_MIN = 1
+SEED_MAX = 8192
+UINT32_MASK = 0xFFFFFFFF
+UINT32_SIZE = 4294967296
+
+
+def clamp_seed(seed: int, fallback: int = DEFAULT_SEED) -> int:
+    try:
+        parsed = int(seed)
+    except (TypeError, ValueError):
+        parsed = fallback
+    return max(SEED_MIN, min(SEED_MAX, parsed))
+
+
+class Mulberry32:
+    def __init__(self, seed: int):
+        self.state = clamp_seed(seed) & UINT32_MASK
+
+    def random(self) -> float:
+        self.state = (self.state + 0x6D2B79F5) & UINT32_MASK
+        t = self.state
+        t = ((t ^ (t >> 15)) * (t | 1)) & UINT32_MASK
+        t ^= (t + (((t ^ (t >> 7)) * (t | 61)) & UINT32_MASK)) & UINT32_MASK
+        return ((t ^ (t >> 14)) & UINT32_MASK) / UINT32_SIZE
+
+    def shuffle(self, items: List) -> None:
+        for index in range(len(items) - 1, 0, -1):
+            swap_index = int(self.random() * (index + 1))
+            items[index], items[swap_index] = items[swap_index], items[index]
 
 
 # -------- 品詞判定ロジック --------
@@ -394,9 +424,7 @@ def merge_small_sublevels(
     return merged
 
 
-def split_into_groups(
-    labels: List[str], words: List[VocabEntry], pos: str, rng: random.Random
-) -> List[Group]:
+def split_into_groups(labels: List[str], words: List[VocabEntry], pos: str, rng) -> List[Group]:
     rng.shuffle(words)
     total = len(words)
     groups: List[Group] = []
@@ -439,7 +467,7 @@ def build_groups(
     # personal_pronoun と pronoun は統合して 1 品詞として扱う
     COMBINED_POS = {"personal_pronoun": "pronoun", "pronoun": "pronoun"}
 
-    rng = random.Random(seed)
+    rng = Mulberry32(seed)
     entries = load_vocab(
         csv_path,
         audio_key_fn=audio_key_fn,

@@ -1,21 +1,10 @@
-import time
 import uuid
 
-from score_append_utils import (
-    append_score_row_fast,
-    append_score_row_safe,
-    compute_user_score_totals,
-    load_sheet_records,
-    upsert_user_total,
+from score_sync_service import (
+    append_score_record,
+    update_totals_for_record,
 )
 from score_row_utils import SENTENCE_MODE, VOCAB_MODE, normalize_mode, normalize_score_row
-
-
-SCORES_SHEET = "Scores"
-USER_STATS_SHEET = "UserStats"
-USER_STATS_SENTENCE_SHEET = "UserStatsSentence"
-SCORE_WRITE_RETRIES = 3
-SCORE_WRITE_RETRY_BASE_SEC = 0.4
 
 
 def _safe_float(value, default=0.0):
@@ -117,55 +106,11 @@ def _build_record(payload):
 
 
 def _append_score(record):
-    fast_saved = append_score_row_fast(record, worksheet_name=SCORES_SHEET)
-    if fast_saved is True:
-        return True
-    return append_score_row_safe(
-        record,
-        worksheet_name=SCORES_SHEET,
-        retries=SCORE_WRITE_RETRIES,
-        retry_base_sec=SCORE_WRITE_RETRY_BASE_SEC,
-    )
-
-
-def _load_score_records_for_totals():
-    for attempt in range(SCORE_WRITE_RETRIES):
-        records = load_sheet_records(SCORES_SHEET, refresh=True)
-        if records is not None:
-            return records
-        if attempt + 1 < SCORE_WRITE_RETRIES:
-            time.sleep(SCORE_WRITE_RETRY_BASE_SEC * (attempt + 1))
-    return None
+    return append_score_record(record, fallback_mode=record.get("mode") or VOCAB_MODE)
 
 
 def _update_totals(record):
-    records = _load_score_records_for_totals()
-    if records is None:
-        return False, False
-
-    user = str(record.get("user") or "").strip()
-    totals = compute_user_score_totals(records, user)
-    ts = str(record.get("ts") or "")
-
-    overall_ok = upsert_user_total(
-        USER_STATS_SHEET,
-        user=user,
-        total_points=totals["overall"],
-        last_updated=ts,
-        retries=SCORE_WRITE_RETRIES,
-        retry_base_sec=SCORE_WRITE_RETRY_BASE_SEC,
-    )
-    sentence_ok = True
-    if record.get("mode") == SENTENCE_MODE:
-        sentence_ok = upsert_user_total(
-            USER_STATS_SENTENCE_SHEET,
-            user=user,
-            total_points=totals["sentence"],
-            last_updated=ts,
-            retries=SCORE_WRITE_RETRIES,
-            retry_base_sec=SCORE_WRITE_RETRY_BASE_SEC,
-        )
-    return overall_ok, sentence_ok
+    return update_totals_for_record(record)
 
 
 def save_mobile_score_request(payload):

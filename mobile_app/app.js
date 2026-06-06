@@ -1,3 +1,10 @@
+import {
+  buildVocabGroups,
+  computeResultSummary,
+  scaleSpartanPoints,
+  scoreForCorrect,
+} from "./quiz_core.mjs";
+
 const APP_VERSION = "2026-05-19-mobile-quality-1";
 const STORAGE_PREFIX = "esperanto-choice-mobile";
 const SESSION_KEY = `${STORAGE_PREFIX}:session:v2`;
@@ -27,13 +34,6 @@ const PUBLIC_APP_URLS = {
   zh: "https://esperanto-quiz-zh.streamlit.app/",
   ko: "https://esperanto-quiz-ko.streamlit.app/",
 };
-const BASE_POINTS = 10;
-const STREAK_BONUS = 0.5;
-const SENTENCE_SCORE_SCALE = 2.0 / 1.5;
-const SENTENCE_STREAK_SCALE = 2.0;
-const VOCAB_ACCURACY_BONUS = 5.0;
-const SENTENCE_ACCURACY_BONUS = 10.0;
-const SPARTAN_SCORE_MULTIPLIER = 0.7;
 const HISTORY_MAX_ITEMS = 100;
 const HISTORY_RECOVERY_LIMITS = [50, 20, 5, 0];
 const RANKING_CACHE_TTL_MS = 120000;
@@ -2255,7 +2255,7 @@ function applyCorrectAnswer(question) {
   const earned = scoreForCorrect(question, session.streak);
   if (session.inSpartan) {
     session.spartanRawPoints += earned;
-    session.spartanScaledPoints += earned * SPARTAN_SCORE_MULTIPLIER;
+    session.spartanScaledPoints += scaleSpartanPoints(earned);
     session.spartanCorrect += 1;
     session.spartanPending = session.spartanPending.filter((index) => index !== session.spartanCurrent);
     session.spartanCurrent = null;
@@ -2896,42 +2896,6 @@ async function updateStorageEstimate(renderToken) {
   }
 }
 
-function computeResultSummary(session) {
-  const total = session.questions.length;
-  const correct = session.correct;
-  const accuracy = total ? correct / total : 0;
-  const accuracyBonus = accuracy * total * (
-    session.settings.mode === "sentence" ? SENTENCE_ACCURACY_BONUS : VOCAB_ACCURACY_BONUS
-  );
-  const points = session.mainPoints + session.spartanScaledPoints + accuracyBonus;
-  return {
-    total,
-    correct,
-    accuracy,
-    accuracyBonus,
-    points,
-  };
-}
-
-function scoreForCorrect(question, streak) {
-  const streakCount = Math.max(0, streak - 1);
-  if (question.mode === "sentence") {
-    const base = (Number(question.level) + 11.5) * SENTENCE_SCORE_SCALE;
-    return base + streakCount * STREAK_BONUS * SENTENCE_STREAK_SCALE;
-  }
-  return BASE_POINTS * getStageFactor(question.stages) + streakCount * STREAK_BONUS;
-}
-
-function getStageFactor(stages) {
-  if (stages.some((stage) => stage.includes("advanced"))) {
-    return 1.6;
-  }
-  if (stages.some((stage) => stage.includes("intermediate"))) {
-    return 1.3;
-  }
-  return 1.0;
-}
-
 function getCurrentQuestion() {
   const session = state.session;
   if (!session) {
@@ -3291,166 +3255,6 @@ function isActiveSession(session) {
 
 function isCompleteSession(session) {
   return Boolean(session && session.status === "complete" && Array.isArray(session.questions) && session.questions.length);
-}
-
-function buildVocabGroups(entries, seed) {
-  const rng = mulberry32(clampInteger(seed, 1, 8192, 1));
-  const byPos = new Map();
-  entries.forEach((entry) => {
-    const pos = entry.pos === "personal_pronoun" ? "pronoun" : entry.pos;
-    const normalized = { ...entry, pos };
-    if (!byPos.has(pos)) {
-      byPos.set(pos, []);
-    }
-    byPos.get(pos).push(normalized);
-  });
-
-  const groups = [];
-  [...byPos.entries()].forEach(([pos, items]) => {
-    const buckets = splitByLevel(items);
-    const sublevels = mergeSmallSublevels(buildSublevels(buckets));
-    sublevels.forEach(({ labels, words }) => {
-      groups.push(...splitIntoGroups(labels, words, pos, rng));
-    });
-  });
-  return groups;
-}
-
-function splitByLevel(entries) {
-  const sorted = [...entries].sort((a, b) => Number(a.level) - Number(b.level));
-  const [beginner, intermediate] = allocateByRatio(sorted.length, [55, 65, 120]);
-  return {
-    beginner: sorted.slice(0, beginner),
-    intermediate: sorted.slice(beginner, beginner + intermediate),
-    advanced: sorted.slice(beginner + intermediate),
-  };
-}
-
-function buildSublevels(buckets) {
-  const ordered = [];
-  [
-    ["beginner", 3],
-    ["intermediate", 3],
-    ["advanced", 6],
-  ].forEach(([stage, parts]) => {
-    evenChunks(buckets[stage] || [], parts).forEach((chunk, index) => {
-      if (chunk.length) {
-        ordered.push({ labels: [`${stage}_${index + 1}`], words: [...chunk] });
-      }
-    });
-  });
-  return ordered;
-}
-
-function mergeSmallSublevels(sublevels) {
-  if (!sublevels.length) {
-    return [];
-  }
-  const merged = [];
-  let current = {
-    labels: [...sublevels[0].labels],
-    words: [...sublevels[0].words],
-  };
-  sublevels.slice(1).forEach((sublevel) => {
-    if (current.words.length < 20) {
-      current.labels.push(...sublevel.labels);
-      current.words.push(...sublevel.words);
-    } else {
-      merged.push(current);
-      current = {
-        labels: [...sublevel.labels],
-        words: [...sublevel.words],
-      };
-    }
-  });
-  if (current.words.length < 20 && merged.length) {
-    const previous = merged.pop();
-    previous.labels.push(...current.labels);
-    previous.words.push(...current.words);
-    merged.push(previous);
-  } else {
-    merged.push(current);
-  }
-  return merged;
-}
-
-function splitIntoGroups(labels, words, pos, rng) {
-  const shuffled = shuffle([...words], rng);
-  const total = shuffled.length;
-  const sizes = groupSizes(total);
-  let cursor = 0;
-  return sizes.map((size, index) => {
-    const entries = shuffled.slice(cursor, cursor + size);
-    cursor += size;
-    return {
-      id: `${pos}:${labels.join("+")}:g${index + 1}`,
-      pos,
-      stages: [...labels],
-      indexLabel: `G${index + 1}`,
-      entries,
-    };
-  });
-}
-
-function groupSizes(total) {
-  if (total <= 30) {
-    return [total];
-  }
-  if (total <= 39) {
-    const half = Math.floor(total / 2);
-    return [half, total - half];
-  }
-  const count = chooseGroupCount(total);
-  const base = Math.floor(total / count);
-  const extra = total % count;
-  return Array.from({ length: count }, (_, index) => base + (index < extra ? 1 : 0));
-}
-
-function chooseGroupCount(total) {
-  const lower = Math.ceil(total / 30);
-  const upper = Math.max(lower, Math.floor(total / 20));
-  let best = lower;
-  let bestDistance = Number.POSITIVE_INFINITY;
-  for (let count = lower; count <= upper; count += 1) {
-    const distance = Math.abs(total / count - 25);
-    if (distance < bestDistance) {
-      best = count;
-      bestDistance = distance;
-    }
-  }
-  return best;
-}
-
-function allocateByRatio(total, weights) {
-  if (total <= 0) {
-    return weights.map(() => 0);
-  }
-  const sum = weights.reduce((acc, value) => acc + value, 0);
-  const raw = weights.map((weight) => total * weight / sum);
-  const floors = raw.map(Math.floor);
-  let remainder = total - floors.reduce((acc, value) => acc + value, 0);
-  const order = raw
-    .map((value, index) => ({ index, fraction: value - floors[index] }))
-    .sort((a, b) => b.fraction - a.fraction);
-  let cursor = 0;
-  while (remainder > 0) {
-    floors[order[cursor % order.length].index] += 1;
-    remainder -= 1;
-    cursor += 1;
-  }
-  return floors;
-}
-
-function evenChunks(items, parts) {
-  const base = Math.floor(items.length / parts);
-  const extra = items.length % parts;
-  let cursor = 0;
-  return Array.from({ length: parts }, (_, index) => {
-    const size = base + (index < extra ? 1 : 0);
-    const chunk = items.slice(cursor, cursor + size);
-    cursor += size;
-    return chunk;
-  });
 }
 
 function formatStageLabel(stages) {

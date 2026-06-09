@@ -94,6 +94,11 @@ def main() -> int:
         except Exception:
             existing = {}
 
+    expected = {
+        "vocab": load_audio_keys(VOCAB_DATA_PATH),
+        "sentence": load_audio_keys(SENTENCE_DATA_PATH),
+    }
+
     for mode, config in FOLDERS.items():
         page = fetch_drive_folder(config["folder_id"])
         files = extract_wav_files(page)
@@ -118,18 +123,23 @@ def main() -> int:
                 continue
             print(f"error: no wav files found in {config['label']}", file=sys.stderr)
             return 1
-        manifest[mode] = files
+        expected_keys = expected.get(mode, set())
+        extra_drive_keys = sorted(set(files) - expected_keys)
+        files_for_manifest = {
+            key: file_id
+            for key, file_id in files.items()
+            if key in expected_keys
+        }
+        manifest[mode] = dict(sorted(files_for_manifest.items()))
         manifest["sources"][mode] = {
             "folderId": config["folder_id"],
             "label": config["label"],
-            "fileCount": len(files),
+            "fileCount": len(files_for_manifest),
+            "driveFileCount": len(files),
+            "extraDriveKeys": extra_drive_keys[:100],
         }
         print(f"{mode}: {len(files)} wav files")
 
-    expected = {
-        "vocab": load_audio_keys(VOCAB_DATA_PATH),
-        "sentence": load_audio_keys(SENTENCE_DATA_PATH),
-    }
     warnings = []
     for mode, keys in expected.items():
         available = set(manifest[mode].keys())
@@ -137,10 +147,14 @@ def main() -> int:
         extra = sorted(available - keys)
         manifest["sources"][mode]["matchedDataKeys"] = len(keys & available)
         manifest["sources"][mode]["missingDataKeys"] = missing
-        manifest["sources"][mode]["extraDriveKeys"] = extra[:100]
+        drive_extra_keys = manifest["sources"][mode].get("extraDriveKeys", [])
+        if not drive_extra_keys:
+            manifest["sources"][mode]["extraDriveKeys"] = extra[:100]
         if missing:
             warnings.append(f"{mode}: {len(missing)} data audio keys missing from Drive")
-        if extra:
+        if drive_extra_keys:
+            warnings.append(f"{mode}: {len(drive_extra_keys)} Drive files not referenced by mobile data")
+        elif extra:
             warnings.append(f"{mode}: {len(extra)} Drive files not referenced by mobile data")
 
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)

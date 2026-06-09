@@ -1,6 +1,6 @@
 {
   "downloadBaseUrl": "https://drive.google.com/uc?export=download&id=",
-  "generatedAt": "2026-06-07T09:47:05.124687+00:00",
+  "generatedAt": "2026-06-09T14:58:51.158799+00:00",
   "provider": "google_drive",
   "schema": 1,
   "sentence": {
@@ -2466,6 +2466,7 @@
     "2460_cxu_vi_permesas_hejmbestojn": "1lQ8VFmr8QP7GNiGV_vxvN0OlAqD2KSWO",
     "2461_cxu_cxi_tie_estas_nagxejo": "1E12YU_3Dao_aeCH3QFEXaTQvq-VzHB-E",
     "2462_cxu_estas_lavservo": "1tODAwyNbDI1scPU9NbXY46jDGThO-4KE",
+    "2463_cxu_estas_trinkejeto_en_mia_cxambro": "1hbM6a3uT7FXLsM3gS3TLDMG9TSqMfe3X",
     "2464_cxu_vi_havas_cxambron_por_fumantoj": "1HvaMUGHdkMOyQqK1mXxD0_B_GfkyXKHw",
     "2465_cxu_en_la_cxambro_estas_televido": "1OU3vF4QB-BELVQxMe4y26wzSSntkFFHN",
     "2466_cxu_vi_havas_cxambroservon": "1-P6BiDeM12r2YNtTMllw7w3D3_GjT8TI",
@@ -2627,6 +2628,7 @@
     "2622_bonvolu_mendi_taksion_por_mi": "1SbFy8vVqikA2T1jS4r2a9Uh0wJXnDlV6",
     "2623_via_taksio_estas_cxi_tie": "1iatpjDitwHnUf3wB9Jpa0HSYqBXJQV4g",
     "2624_kiom_estas_la_sumo": "1CtdwcBGDoM3jzzO5YNUcvkBoScZB0w3w",
+    "2625_cxu_vi_uzis_la_cxambran_fridujeton": "1AAaoywLYIGQlvSa1pXmMmVwbONklh6FQ",
     "2626_ne_ni_ne_uzis_gxin": "1gpLlpAjPBTQz7irIBhaTefpUAe4fXQ7Q",
     "2627_cxu_la_servokotizo_estas_inkluzivita": "1KuNDMdBVJOONFYMQY7futXir2CO-dk3E",
     "2628_servokotizo_ne_estas_inkluzivita": "1LjeUeXC1eIXelGQCB_nyWJambvlolT8I",
@@ -2644,6 +2646,7 @@
     "2640_cxu_estus_eble_elregistrigxi_pli_malfrue": "1k2EPBeleqt_Q_oSTlNQCPycDI_VIRA21",
     "2641_kiom_estas_la_servokotizo_kaj_la_imposto": "1CU0Es330AhpiBK38gMEzHFEEovwUH7cu",
     "2642_cxu_mi_povas_ricevi_detaligitan_fakturon": "1JWAjTC5AN1SrKFyY4kgCYBHN24aNKN9p",
+    "2643_kiom_oni_fakturis_al_mi_por_la_trinkajxoj_el_la_cxambra_sxranketo": "1H_ppnQn71bCVPdXE_2NH8BnJP_UpVGEX",
     "2644_internaciaj_vokoj_estas_inkluzivitaj_en_la_fakturo": "1fpkdjjOanCMFzPhRwMcj6RyqjJapXcrq",
     "2645_mi_trovas_gxin_iom_multekosta": "1mGipJ5b8HMcENlAVIvCIukWaBMTD4s9d",
     "2646_cxu_mi_povas_uzi_personan_cxekon": "1QyJ9v7wGGcORZ3jzhw_j-_lYhEDUxCLY",
@@ -5004,7 +5007,12 @@
   },
   "sources": {
     "sentence": {
-      "extraDriveKeys": [],
+      "driveFileCount": 5003,
+      "extraDriveKeys": [
+        "2463_cxu_estas_minibaro_en_mia_cxambro",
+        "2625_cxu_vi_uzis_la_minibaron",
+        "2643_kiom_oni_fakturis_al_mi_por_la_minibaro"
+      ],
       "fileCount": 5000,
       "folderId": "1tmb4_k3zRv2JjOmHCNvv5zIbbneeKwYZ",
       "label": "Esperanto例文5000文_収録音声",

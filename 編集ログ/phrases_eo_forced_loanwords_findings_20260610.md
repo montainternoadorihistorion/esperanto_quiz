@@ -998,3 +998,68 @@ R5: forced 3 + gray 12 → R6: defect 36 + gray 12 → **R7: gray 1**。
 収量は明確に枯渇した。語彙(×2)・連語・語義・固有名詞・文法(8観点)・定型句・疑問詞・
 造語法・-um の**全レンズを走査完了**。本書をもって発掘フェーズを終了し、
 以後は Codex 裁定（特に第6ラウンドの bonvolu 家族26文と defect 10件）に移行すべきである。
+
+---
+---
+
+# 第8ラウンド（多様性校正レンズ・2026-06-11）
+
+ユーザー指示「**学習教材として表現の多様性は歓迎**」を校正値として組み込み、(1) 軽動詞構文
+331件・(2) 焦点詞 ankaŭ/nur 42文・(3) 比較/配分構文33文の census と、(4) **既存グレーリスト
+25項目の多様性再裁定**を実施した。
+
+## 【Codex裁定】エスペラント本文は維持、訳調整2件
+
+### R8-1. PID 1588 — "Mi faras **praktikon**"（Jobs・職業体験）【KEEP】
+- Codex裁定: **修正しない**。
+- 根拠: `staĝo` / `staĝi` はこの文脈で非常に自然な候補だが、PIVの `praktiko` は
+  「理論に対する実践」だけでなく、`komencis mian medicinan praktikon` や `praktiki ... profesion`
+  のような実務・職業実践の用法を含む。`Mi faras praktikon` はやや広い表現ではあるが、
+  RU `Я прохожу практику`、JA「職業体験」、ZH/KRの実習文脈から大きく外れない。
+- 教材方針: 正しい範囲内の表現多様性として維持する。`staĝo` に統一すると自然ではあるが、
+  明確な誤り訂正ではなく過度な標準化になりうる。
+
+### R8-2/3. ankaŭ の焦点と訳のズレ（訳調整を採用）
+- PID 3241 "Provu **ankaŭ vi** la stekon!" — EOは「あなたも」。PIVの `ankaŭ` 項でも、
+  原則として強調語の直前に置くとされるため、EOは維持し、訳側を「あなたも」焦点へ調整した。
+- PID 3679 — "Mi ankaŭ bezonas..." 自体は **PIV の ankaŭ 項 Rim. がZ用法として明文是認**
+  する自然な形。EOは維持し、日訳だけを「小麦粉も500グラム...」へ調整した。
+- ※「Mi ankaŭ ŝatas X」型10文の初期フラグは、上記Z用法是認により**全て棄却**（誤りではない）。
+
+## 【クリーン確認】
+- **軽動詞331件**: fari mendon/plendon/servon/paŭzon/interkonsenton、preni lecionojn/
+  medikamenton 等、疑った組み合わせはことごとく**PIV本文にコロケーションごと掲載**。
+  fari foton・fari halton 等は現代の良質な使用で多様性として維持。
+- **nur 20文**: 19/20 で焦点直前配置が正確（残1も許容範囲）。
+- **比較・配分33文**: 完全クリーン — pli...ol の格処理（"malamas pli ol mensogulon"）、
+  kiel eble plej、la 無し ambaŭ（Zの勧告どおり）、po の配分用法、unu la alian、すべて教科書的。
+
+## 【多様性再裁定】グレーリスト25項目の最終区分け（Codex への正式勧告）
+
+### 多様性保護 → KEEP 確定（22項目・修正不要・再フラグ禁止）
+pagmaŝino(2271)・informatiko(1382,1737)・Wi-Fi生表記(2606,3067)・Tvitero/Facebook(4902,4891)・
+doma vino(2966)・Bankoko(2593)・Abu-Dabio(2443)・Emilin/Laŭran(860,584)・Oxford-strato(2551)・
+jaĥto/jakto・evento(1897,1947)・fari rendevuon(4399,4688,4689,4731)・kia+計測名詞(1690,4266,
+4300,1709)・elregistriĝi(2765,2794,2795)・plena pensiono(2649)・tribuno(4058)・mufino(3282)・
+bovlingo(4160)・sprajo(4412)・pensia programo(1701)・deklaracio(2088,2106,4953)・
+inkludita(2648)・fragila(2062)・poŝtejo(1803)
+
+決定的な再照合の成果（裁定の質を上げた新証拠）:
+- **funtoj(2464)**: PIV funt/o Sense 2 が明文で「^Z = pundo」— 通貨 funto はザメンホフ用法。
+  既適用の pundoj 修正は「統一」であって誤り訂正ではなかった（差し戻し不要・記録のみ）。
+- **jaĥto/jakto**: PIVは**両方を見出し語**に持つ（jaĥt/o「^Z = jakto」+ jakt/o）— 同義形併存。
+- **deklaracio**: PIV公式追加語で定義そのものが「Deklaro 1」— 公認同義語。
+- **inkludi/inkluzivi**: PIVが相互参照する**公認同義語ペア**。
+- **plena pensiono**: PIVのRim.が禁じるのは「宿泊料金」語義のみで、全食付き形態は適法。
+
+### フラグ存続（文法・意味の欠陥 — 多様性では保護されない）
+- **turnu 家族×6**（無目的語他動詞 — 2243 turniĝu が規範）→ R6修正適用済み・正当
+- **bonvolu A型**（宣言文+bonvolu: 意味破綻）**B型**（二重命令: PMEG明示却下)**C型**（bonvole
+  係り先逆転）→ R6修正適用済み・正当
+- **bonvolu D型**（省略名詞句型11文）: 本来は多様性保護→KEEPが正裁定だったが、既に mi petas
+  へ修正・再収録済みで適用後も完全に自然なため**差し戻し不要**。今後この型を再フラグしないこと。
+
+## 第8ラウンド総括
+Claude案をCodex側で再裁定した結果、エスペラント本文の追加修正は0件。
+`Mi faras praktikon` は教材上の多様性として維持し、`ankaŭ` の焦点が訳とずれていた2件だけを
+訳側で調整した。音声再生成は不要。

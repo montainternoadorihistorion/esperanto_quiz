@@ -1,6 +1,7 @@
 # エスペラント例文 強引な外来語・カルク修正一覧
 
 作成日: 2026-06-10
+最終更新日: 2026-06-11
 
 対象ファイル: `phrases_eo_en_ja_zh_ko_ru_fulfilled_260505.csv`
 
@@ -8,7 +9,14 @@
 
 `minibaro` 級の強引な外来語化や、英語・ロシア語の連語をそのまま移したような表現を点検し、エスペラント学習教材として明確に直した方がよい箇所だけを修正した。
 
-最終的なCSV差分は **125行**。音声差し替え操作は **127件** だが、これは PID 2271 と PID 3248 を途中でさらに再調整したためで、最終CSV上の変更行数は125行である。
+最終的なCSV差分は **127行**。このうちエスペラント本文の変更は **125行**、訳だけの焦点調整は **2行**（PID 3241 / 3679）である。音声差し替え操作は **127件** だが、これは PID 2271 と PID 3248 を途中でさらに再調整したためで、最終CSV上のエスペラント本文変更行数は125行である。
+
+この文書は、今回の一連の修正について、後から次の4点を確認できるように整理したもの。
+
+- 何件直したか
+- どの方針で直したか
+- 具体的にどの文をどう直したか
+- 音声・モバイルデータ・Google Drive側に何が残っているか
 
 ## 判断方針
 
@@ -17,16 +25,58 @@
 - 料理名・現代的職名・口語として成立する表現は、過度に純化しない。
 - 修正後は RHVoice `spomenka` で音声を再生成し、root音声とスマホ用音声を同期する。
 
+## 最終結論
+
+| 項目 | 結論 |
+|---|---|
+| CSV本文 | 127行を修正（エスペラント本文125行 + 訳のみ2行） |
+| 音声 | 修正文は RHVoice `spomenka` で再生成済み |
+| root音声 | 5000 WAVで整合 |
+| スマホ用音声 | 5000 WAVで整合 |
+| PWAデータ | `mobile_app/data/sentences.json` を再生成済み |
+| Drive manifest | 残り51件アップロード後に `mobile_app/data/audio_manifest.json` を再生成済み |
+| 第7ラウンド | `Mi feriumas` は教材上の多様性として維持。追加修正なし |
+| 第8ラウンド | `Mi faras praktikon` は維持。`ankaŭ` の訳焦点だけ2件調整 |
+| 関連commit | `7684656`, `a7cfbd8`, `39fbd76`, `6c83b47`, `355cd9e`, および本commitで反映済み |
+
 ## 件数
 
 | 区分 | 内容 | 件数 |
 |---|---:|---:|
-| 最終CSV変更行 | 一連の修正前のCSVから最終CSVまでの変更行 | 125 |
+| 最終CSV変更行 | 一連の修正前のCSVから最終CSVまでの変更行 | 127 |
+| うちエスペラント本文変更行 | 音声再生成を伴う本文変更 | 125 |
+| うち訳のみ調整行 | エスペラント本文・音声キーは維持 | 2 |
 | 音声生成操作 | 第1・第2・第3・最終検品・第5・第6ラウンドの合計 | 127 |
 | root例文音声 | `Esperanto例文5000文_収録音声/` のWAV | 5000 |
 | スマホ例文音声 | `mobile_app/sentence-audio/` のWAV | 5000 |
-| Drive fallback | 第6ラウンド新51音声のアップロード前 | matched 4949 / missing 51 |
+| Drive fallback | 第6ラウンド新51音声アップロード後 | matched 5000 / missing 0 |
 | Drive上の旧重複 | 第5・第6ラウンド旧音声がDrive側に残存 | extra 56 |
+
+## ラウンド別まとめ
+
+| ラウンド | 主な内容 | 音声生成 | 備考 |
+|---|---|---:|---|
+| 第1ラウンド | `minibaro` 周辺の強引な外来語・露骨なカルクを修正 | 8 | 初期対応 |
+| 第2ラウンド | 候補の追加精査。料理名・現代語は過度に純化せず、明確な不自然箇所だけ修正 | 18 | 教材方針を明確化 |
+| 第3ラウンド | 連語・文脈・語義ズレを広めに修正 | 41 | 多くは英語式構文の自然化 |
+| 最終検品 | 途中修正した文の再調整 | 4 | PID 2271 / 3248 など |
+| 第5ラウンド | PIV用例や固定設備名に合わせて追加修正 | 5 | `Savelirejo`, `Krizbremso`, `fotobudo` など |
+| 第6ラウンド | 文法・語法・文末pleaseタグを追加修正 | 51 | `bonvolu` 文末タグ26件を `mi petas` に整理 |
+| 第7ラウンド | `Mi feriumas` を再検討 | 0 | `feriumi` は透明な派生・実使用ありとして維持 |
+| 第8ラウンド | `praktiko` と `ankaŭ` の追加再裁定 | 0 | `Mi faras praktikon` は維持。訳焦点のみ2件調整 |
+
+## カテゴリ別の見取り図
+
+| カテゴリ | 代表例 | 判断 |
+|---|---|---|
+| 強引な外来語・不安定な借用 | `fotoroboto`, `fotokabino`, `remiso` | 透明なエスペラント表現へ修正 |
+| 英語・ロシア語式カルク | `make a reservation`, `come with`, `have attention`, `withdraw money` 型 | エスペラントで自然な動詞・構文へ修正 |
+| 文法・格・相関詞 | `ŝaltitajn`, `io ... kiun`, `atingi tien` | 文法上より安定する形へ修正 |
+| 文脈上の語義ズレ | `aliĝilo`, `pakaĵo da aspirino`, `daŭrigu` 道案内 | 場面に合う語へ修正 |
+| 設備名・固定表現 | `Kriza elirejo`, `Urĝa bremso`, `televido` 機器名 | `Savelirejo`, `Krizbremso`, `televidilo` などへ整理 |
+| 飲食・注文表現 | 食べる意味の `havi`, 注文文脈の `havi` | `manĝi`, `mendi`, `preni` などへ自然化 |
+| 丁寧表現 | 文末 `bonvolu/bonvole` | 文末タグだけ `mi petas` へ。`Bonvolu + 不定詞` は維持 |
+| 維持した多様性 | `regato`, `smuzio`, `toasto`, `Mi feriumas`, `Mi faras praktikon` | 正しい範囲内の多様性として維持 |
 
 ## 最終修正一覧
 
@@ -194,6 +244,22 @@ Codex側でPIV2020と実使用例を確認した結果、`ferii` の方が辞書
 教材方針として「正しい範囲内の多様性」を残すため、PID 2074 `Mi feriumas` は維持した。
 したがって第7ラウンドでのCSV・音声・モバイルデータの追加変更はない。
 
+## 第8ラウンド追加裁定
+
+第8ラウンドでは、Claude Code が PID 1588 `Mi faras praktikon` を `Mi faras staĝon` へ
+修正する候補として挙げた。Codex側でPIV2020を再確認した結果、`staĝo` は確かにこの文脈で
+自然だが、`praktiko/praktiki` も実務・職業実践の範囲を含むため、明確な誤りとは判断しなかった。
+教材方針として、PID 1588 `Mi faras praktikon` は多様性として維持した。
+
+一方、`ankaŭ` の焦点と訳がずれていた2件は、エスペラント本文を維持したまま訳だけ調整した。
+
+| PID | エスペラント | 調整内容 |
+|---:|---|---|
+| 3241 | `Provu ankaŭ vi la stekon!` | `ankaŭ vi` = 「あなたも」に合わせ、英日中韓訳を調整 |
+| 3679 | `Mi ankaŭ bezonas aĉeti duonkilogramon da faruno` | `also need` の焦点に合わせ、日訳を「小麦粉も...」へ調整 |
+
+この第8ラウンドではエスペラント本文・音声キーは変えていないため、音声再生成は不要。
+
 ## 音声・モバイルデータ
 
 修正文の音声は RHVoice `spomenka` で作成した。
@@ -215,20 +281,20 @@ Codex側でPIV2020と実使用例を確認した結果、`ferii` の方が辞書
 - 最終検品: 4件、`voice=spomenka`、全件 `generated`
 - 第5ラウンド: 5件、`voice=spomenka`、全件 `generated`
 - 第6ラウンド: 51件、`voice=spomenka`、全件 `generated`
+- 第8ラウンド: 訳のみ2件、音声再生成なし
 - root音声: 5000 WAV
 - スマホ用音声: 5000 WAV
-- `npm run validate:mobile-assets`: passed（Drive fallback の新51件 missing / 旧56件 extra は警告）
+- `npm run validate:mobile-assets`: passed（Drive fallback は matched 5000 / missing 0。旧56件 extra は削除候補）
 - `npm run test:unit`: 69 tests passed
 
 ## Google Drive状態
 
-第6ラウンド反映後に `tools/build_drive_audio_manifest.py` でDriveを再読込した現時点では次の状態:
+第6ラウンド新51音声をDriveへアップロード後、`tools/build_drive_audio_manifest.py` でDriveを再読込した現時点では次の状態:
 
-- Drive上の例文WAV: 5005件
+- Drive上の例文WAV: 5056件
 - mobile data と一致する必要音声: 5000件
-- matched: 4949件
-- missing: 51件
-  - 第6ラウンドで生成した新51音声
+- matched: 5000件
+- missing: 0件
 - extra: 56件
   - 第6ラウンドで置き換えた旧51音声
   - 第5ラウンド以前からDrive側に残る旧5音声:
@@ -239,7 +305,7 @@ Codex側でPIV2020と実使用例を確認した結果、`ferii` の方が辞書
     - `4779_cxu_vi_havas_fotokabinon`
 
 アプリ同梱のローカル音声は root / スマホ用とも5000件で揃っているため通常再生には支障ない。
-Drive fallbackを完全一致に戻すには、第6ラウンドの新51音声をDriveへアップロードし、旧56音声をDrive上から削除する。
+Drive fallbackを完全一致に戻すには、旧56音声をDrive上から削除する。
 
 ## 変更された主なファイル
 
@@ -251,4 +317,5 @@ Drive fallbackを完全一致に戻すには、第6ラウンドの新51音声を
 - `mobile_app/sentence-audio/*.wav`
 - `Esperanto例文5000文_収録音声/*.wav`
 - `編集ログ/phrases_eo_forced_loanwords_findings_20260610.md`
+- `編集ログ/drive_audio_extra_files_to_delete_20260611.md`
 - 本ファイル

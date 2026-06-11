@@ -25,7 +25,11 @@ FOLDERS = {
         "label": "Esperanto例文5000文_収録音声",
     },
     "vocab": {
-        "folder_id": "1YBN5sNxSTHKXh_oJJSlCG-L3lnT1OpIG",
+        # Repointed 2026-06-11 to a stable dedicated public folder (a verbatim
+        # upload of the local audio/ dir). The previous folder
+        # (1YBN5sNxSTHKXh_...) lived in a frequently-reorganized Drive and
+        # could not be guaranteed to stay shared.
+        "folder_id": "1WVtwMh83-Peenf68XsQsSedw17s6CONE",
         "label": "audio",
     },
 }

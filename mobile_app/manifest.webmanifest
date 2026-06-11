@@ -1,6 +1,6 @@
 {
-  "name": "Esperanto 4択",
-  "short_name": "Eo4択",
+  "name": "Esperanto Quiz",
+  "short_name": "EoQuiz",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

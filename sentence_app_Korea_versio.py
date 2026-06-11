@@ -1068,7 +1068,7 @@ def main(*, set_page_config_once: bool = True):
     show_intro_block = not (compact_ui and bool(st.session_state.get("questions")))
     if show_intro_block:
         render_classic_mode_switch("sentence", "ko")
-        st.write("주제별 예문에서 4지선다로 출제합니다. 단어 버전보다 점수 계수를 약 2.0배로 조정했습니다.")
+        st.write("주제별 예문에서 4지선다로 출제합니다. 점수 계수를 단어 버전의 약 2.0배로 조정했습니다.")
         with st.expander("점수 계산 규칙"):
             st.markdown(
                 "\n".join(
@@ -1500,7 +1500,7 @@ def main(*, set_page_config_once: bool = True):
             f"(정확도 보너스 없음·{SPARTAN_SCORE_MULTIPLIER:.1f}배 포함) / 정확도 보너스 {acc_bonus:.1f}"
         )
         if st.session_state.spartan_mode and sp_attempts:
-            st.caption(f"스파르타 모드: 복습분을 일반의 {SPARTAN_SCORE_MULTIPLIER*100:.0f}%로 합산(정확도 보너스 없음)")
+            st.caption(f"스파르타 모드: 복습분을 일반 점수의 {SPARTAN_SCORE_MULTIPLIER*100:.0f}%로 합산(정확도 보너스 없음)")
             st.caption(f"스파르타 정확도: {sp_accuracy*100:.1f}% ({sp_correct}/{sp_attempts})")
         if normalized_sentence_user_name:
             st.caption("같은 사용자명의 점수가 있으면 누적에 합산합니다.")

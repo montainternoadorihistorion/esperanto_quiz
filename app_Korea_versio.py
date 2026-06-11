@@ -82,7 +82,7 @@ POS_JP = {
 STAGE_JP = {
     "beginner": "초급",
     "intermediate": "중급",
-    "advanced": "상급",
+    "advanced": "고급",
 }
 
 # 출제 방향
@@ -959,7 +959,7 @@ def main(*, set_page_config_once: bool = True):
                         f"- 기본점: {BASE_POINTS} × 레벨 배율 "
                         f"(초급{VOCAB_STAGE_FACTORS['beginner']:.1f} / "
                         f"중급{VOCAB_STAGE_FACTORS['intermediate']:.1f} / "
-                        f"상급{VOCAB_STAGE_FACTORS['advanced']:.1f})",
+                        f"고급{VOCAB_STAGE_FACTORS['advanced']:.1f})",
                         f"- 연속 정답 보너스: 2번째 문제부터 연속 정답 1회당 +{STREAK_BONUS}",
                         f"- 정확도 보너스: 최종 정답률 × 문제 수 × {ACCURACY_BONUS_PER_Q}",
                         f"- 스파르타 정확도 보너스: 없음(복습분은 기본+난이도만 {SPARTAN_SCORE_MULTIPLIER:.1f}배로 합산)",
@@ -1243,7 +1243,7 @@ def main(*, set_page_config_once: bool = True):
         st.metric("정답률", f"{accuracy*100:.1f}%")
         st.metric("점수", f"{points:.1f}")
         if st.session_state.spartan_mode and sp_attempts:
-            st.caption(f"스파르타 모드: 복습분을 일반의 {SPARTAN_SCORE_MULTIPLIER*100:.0f}%로 합산(정확도 보너스 없음)")
+            st.caption(f"스파르타 모드: 복습분을 일반 점수의 {SPARTAN_SCORE_MULTIPLIER*100:.0f}%로 합산(정확도 보너스 없음)")
             st.caption(f"스파르타 정확도: {sp_accuracy*100:.1f}% ({sp_correct}/{sp_attempts})")
         st.write(f"정답 {correct} / {total}")
         st.write(

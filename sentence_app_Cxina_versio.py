@@ -593,9 +593,9 @@ def _resolve_overall_ranking_table(
         return None, None, None
 
     if main_rank_status.get("source") != "unavailable" and main_rank:
-        notice = "总排行榜正在暂时显示辅助汇总表累计。今日/本月页签可能会为空。"
+        notice = "总排行榜暂时显示辅助汇总表累计。今日/本月页签可能会为空。"
         if main_rank_status.get("source") == "cache":
-            notice = "总排行榜正在暂时显示上次获取的辅助汇总表累计。今日/本月页签可能会为空。"
+            notice = "总排行榜暂时显示上次获取的辅助汇总表累计。今日/本月页签可能会为空。"
         return main_rank, [], notice
 
     return None, None, "暂时无法获取总排行榜。请稍后重新加载。"
@@ -1157,7 +1157,7 @@ def main(*, set_page_config_once: bool = True):
         )[0]
         st.session_state.direction = direction
         st.checkbox(
-            f"斯巴达模式（结束后把错题随机出到答对为止，得分{SPARTAN_SCORE_MULTIPLIER:.1f}倍）",
+            f"斯巴达模式（结束后错题会随机重复出现，直到答对为止，得分{SPARTAN_SCORE_MULTIPLIER:.1f}倍）",
             key="spartan_mode",
             disabled=bool(st.session_state.questions),
         )
@@ -1202,7 +1202,7 @@ def main(*, set_page_config_once: bool = True):
             entries = groups.get((topic, subtopic), [])
             qs = build_questions(entries, selected_levels, rng, direction)
             if len(qs) < 4:
-                st.warning("请调整等级，使题目达到至少4题。")
+                st.warning("请调整等级，使题目至少达到4题。")
             else:
                 st.session_state.questions = qs
                 st.session_state.q_index = 0
@@ -1586,7 +1586,7 @@ def main(*, set_page_config_once: bool = True):
                         else:
                             st.session_state.score_saved = False
                             st.session_state.score_sync_warning = (
-                                "分数日志已保存。只有累计分数同步失败，"
+                                "分数日志已保存，但累计分数同步失败，"
                                 "再次点击会使用同一保存ID安全地重新更新。"
                             )
                         st.rerun()

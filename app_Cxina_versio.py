@@ -993,7 +993,7 @@ def main(*, set_page_config_once: bool = True):
         choice = st.selectbox("选择分组", group_labels)
         selected_group = group_options[group_labels.index(choice)] if group_options else None
         st.checkbox(
-            f"斯巴达模式（做完全部题目后，将错题随机出到答对为止，得分{SPARTAN_SCORE_MULTIPLIER:.1f}倍）",
+            f"斯巴达模式（做完全部题目后，错题会随机重复出现，直到答对为止，得分{SPARTAN_SCORE_MULTIPLIER:.1f}倍）",
             key="spartan_mode",
             disabled=bool(st.session_state.questions),
         )

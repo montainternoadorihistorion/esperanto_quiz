@@ -12,11 +12,17 @@
 
 ## CSV本文に反映した修正
 
+なし。
+
+## 再監査で復元した箇所
+
+当初は `metal〜` を日本語化したが、依頼文の「語根露出・未解決参照・派生語メモ記法は現状維持。過去に修正していれば元に戻す」という条件を優先し、現在のCSVでは元の注記に復元した。
+
 | 行 | 語根 | 列 | 旧 | 新 | 理由 |
 |---:|---|---|---|---|---|
-| 425 | `fadeno` | Japanese_Trans | `{Ｂ}糸, 線; 筋, 脈絡（針金は通常、別語（metal〜）を用いる）` | `{Ｂ}糸, 線; 筋, 脈絡（針金は通常、別語（金属線）を用いる）` | `metal〜` は `〜` を含むが、別語根 `metal` が通常文中に直接出ている。意味を変えずに日本語化し、日中韓注釈内でエスペラント語根を直接露出させない原則に合わせた。 |
+| 425 | `fadeno` | Japanese_Trans | `{Ｂ}糸, 線; 筋, 脈絡（針金は通常、別語（金属線）を用いる）` | `{Ｂ}糸, 線; 筋, 脈絡（針金は通常、別語（metal〜）を用いる）` | 語根露出を含む既存注記として復元。 |
 
-同じ修正を `編集ログ/2890 Gravaj Esperantaj Vortoj kun Signifoj en la Japana, Ĉina kaj Korea_260505_plej_nova.csv` にも反映し、ルートCSVとの一致を維持した。
+同じ復元を `編集ログ/2890 Gravaj Esperantaj Vortoj kun Signifoj en la Japana, Ĉina kaj Korea_260505_plej_nova.csv` にも反映し、ルートCSVとの一致を維持した。
 
 ## 個別に見たが修正しない項目
 
@@ -40,13 +46,12 @@
 
 ## 実施した機械確認
 
-- rows 0401-0500 について、日中韓注釈に保護されていないラテン文字列が残っていないかを簡易チェック。
-- 修正後、同範囲で未保護のラテン文字列は0件。
+- rows 0401-0500 について、日中韓注釈中の記法を確認。
+- `fadeno` 行の `metal〜` は、依頼文の復元条件に合わせて現状維持に戻した。
 - PIV2020ローカルデータで、判断に迷いやすい `epok/o`, `erar/i`, `esenc/o`, `estim/i`, `etend/i`, `facil/a`, `fal/i`, `feliĉ/a`, `fer/o`, `fingr/o` の見出し存在を確認。
-- `mobile_app/data/vocab.json` を再生成し、`fadeno` の日本語注釈が反映済みであることを確認。
 
 ## 変更
 
-- CSV本文: 1セル修正
-- mobile data: `mobile_app/data/vocab.json` を再生成
+- CSV本文: 0セル修正、1セル復元
+- mobile data: 復元後に `mobile_app/data/vocab.json` を再生成
 - 音声: 変更なし

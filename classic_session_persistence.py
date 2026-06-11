@@ -221,6 +221,11 @@ def build_classic_session_snapshot(
         "spartan_attempts": _get_state_value(state, "spartan_attempts", 0),
         "spartan_correct_count": _get_state_value(state, "spartan_correct_count", 0),
         "show_option_audio": _get_state_value(state, "show_option_audio", True),
+        # 保存フラグ/保存IDも持ち越す: 保存済みの結果画面を復元→再保存で新しい
+        # save_id が発行され二重加算される穴を塞ぐ（保存失敗後の復元は同じ
+        # save_id を再利用し、Sheets 側の冪等チェックが二重追記を防ぐ）。
+        "score_saved": bool(_get_state_value(state, "score_saved", False)),
+        "pending_save_id": _get_state_value(state, "pending_save_id", None),
     }
 
     if app == "vocab":
@@ -318,6 +323,8 @@ def validate_classic_session_snapshot(
         "spartan_attempts": _clamp_int(raw_state.get("spartan_attempts"), 0, 99999, 0),
         "spartan_correct_count": _clamp_int(raw_state.get("spartan_correct_count"), 0, 99999, 0),
         "show_option_audio": bool(raw_state.get("show_option_audio", True)),
+        "score_saved": bool(raw_state.get("score_saved")),
+        "pending_save_id": _safe_optional_str(raw_state.get("pending_save_id"), 80),
     }
 
     if app == "vocab":
@@ -375,8 +382,8 @@ def apply_classic_session_snapshot(
     for key, value in state.items():
         st.session_state[key] = value
 
-    st.session_state.score_saved = False
-    st.session_state.pending_save_id = None
+    # score_saved / pending_save_id はスナップショットから復元される（上のループ）。
+    # 旧形式スナップショットはサニタイザの既定値 False/None になり従来挙動と互換。
     st.session_state.score_refresh_needed = False
     st.session_state.score_sync_warning = None
     if snapshot["appKind"] == "vocab":

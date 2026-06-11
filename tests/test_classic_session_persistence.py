@@ -45,7 +45,7 @@ def sentence_question():
 
 
 class ClassicSessionPersistenceTests(unittest.TestCase):
-    def test_vocab_snapshot_keeps_quiz_state_without_score_sync_state(self):
+    def test_vocab_snapshot_keeps_quiz_state_and_save_flags(self):
         snapshot = build_classic_session_snapshot(
             "vocab",
             "ja",
@@ -63,7 +63,7 @@ class ClassicSessionPersistenceTests(unittest.TestCase):
                 "group_id": "noun-1",
                 "seed": 7,
                 "score_saved": True,
-                "pending_save_id": "must-not-persist",
+                "pending_save_id": "retry-with-same-save-id",
                 "cached_scores": [{"user": "someone"}],
             },
         )
@@ -73,8 +73,11 @@ class ClassicSessionPersistenceTests(unittest.TestCase):
         self.assertEqual(state["questions"], [vocab_question()])
         self.assertEqual(state["answers"][0]["phase"], "main")
         self.assertEqual(state["main_points"], 12.5)
-        self.assertNotIn("score_saved", state)
-        self.assertNotIn("pending_save_id", state)
+        # 保存フラグ/保存IDは持ち越す（結果画面の復元→再保存による二重加算を防ぐ。
+        # 保存失敗後の復元では同じ save_id を再利用し Sheets 側の冪等チェックに乗せる）。
+        self.assertIs(state["score_saved"], True)
+        self.assertEqual(state["pending_save_id"], "retry-with-same-save-id")
+        # 一時キャッシュは引き続き持ち越さない。
         self.assertNotIn("cached_scores", state)
         self.assertIn("単語クイズ", describe_classic_session_snapshot(snapshot))
 
